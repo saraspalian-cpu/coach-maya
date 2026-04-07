@@ -6,6 +6,9 @@ import MayaProfile from './features/maya/MayaProfile'
 import MayaParent from './features/maya/MayaParent'
 import MayaLesson from './features/maya/MayaLesson'
 import MayaLessons from './features/maya/MayaLessons'
+import MayaMemory from './features/maya/MayaMemory'
+import MayaRitual from './features/maya/MayaRitual'
+import MayaGoals from './features/maya/MayaGoals'
 import Onboarding from './features/maya/Onboarding'
 import { loadProfile } from './features/maya/lib/profile'
 
@@ -21,6 +24,9 @@ function GatedRoutes() {
       <Route path="/parent" element={<MayaParent />} />
       <Route path="/lesson" element={<MayaLesson />} />
       <Route path="/lessons" element={<MayaLessons />} />
+      <Route path="/memory" element={<MayaMemory />} />
+      <Route path="/ritual" element={<MayaRitual />} />
+      <Route path="/goals" element={<MayaGoals />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 import { LEVELS, ACHIEVEMENTS } from './agents/gamification'
 import { loadHistory as loadLessonHistory } from './agents/lessonAnalyst'
+import { getMemoryStats } from './agents/memory'
 import MayaAvatar from './components/Maya3D'
 
 const C = {
@@ -153,6 +154,8 @@ export default function MayaDashboard() {
               <div style={{ fontSize: 9, color: C.muted }}>{gam.level?.title}</div>
             </div>
             <IconBtn onClick={() => navigate('/lessons')} title="Lesson vault">🎙</IconBtn>
+            <IconBtn onClick={() => navigate('/memory')} title="Memory bank">🧠</IconBtn>
+            <IconBtn onClick={() => navigate('/goals')} title="Big picture">🎯</IconBtn>
             <IconBtn onClick={() => navigate('/profile')} title="Profile">👤</IconBtn>
             <IconBtn onClick={() => navigate('/parent')} title="Parent report">📊</IconBtn>
             <IconBtn onClick={() => navigate('/schedule')} title="Schedule">⚙</IconBtn>
@@ -189,6 +192,9 @@ export default function MayaDashboard() {
 
       {/* ─── Lesson CTA — Maya's signature feature ─── */}
       <LessonCTA navigate={navigate} />
+
+      {/* ─── Smart secondary CTAs (ritual + memory) ─── */}
+      <SmartCTAs navigate={navigate} />
 
       {/* ─── Tab Bar ─── */}
       <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, background: C.surface }}>
@@ -519,6 +525,56 @@ function MayaMessageBubble({ message }) {
         Maya says
       </div>
       <div style={{ fontSize: 13, lineHeight: 1.5 }}>{message.text}</div>
+    </div>
+  )
+}
+
+function SmartCTAs({ navigate }) {
+  const hour = new Date().getHours()
+  const memStats = getMemoryStats()
+  const isMorning = hour >= 5 && hour < 11
+  const isEvening = hour >= 18 && hour < 23
+
+  const ctas = []
+  if (isMorning) ctas.push({ icon: '☀️', text: 'Morning ritual', sub: 'Set the day', go: '/ritual?mode=morning', color: '#FFA500' })
+  if (isEvening) ctas.push({ icon: '🌙', text: 'Evening wrap', sub: 'Reflect & wrap', go: '/ritual?mode=evening', color: '#A78BFA' })
+  if (memStats.dueToday > 0) ctas.push({ icon: '🧠', text: `${memStats.dueToday} concept${memStats.dueToday > 1 ? 's' : ''} due`, sub: 'Quick memory drill', go: '/memory', color: '#7db8e8' })
+
+  if (ctas.length === 0) return null
+
+  return (
+    <div style={{
+      padding: '8px 16px 14px',
+      borderBottom: `1px solid ${C.border}`,
+      background: C.surface,
+      display: 'flex', gap: 8, overflowX: 'auto',
+    }}>
+      {ctas.map((c, i) => (
+        <button
+          key={i}
+          onClick={() => navigate(c.go)}
+          style={{
+            flex: '0 0 auto',
+            padding: '10px 14px',
+            background: c.color + '15',
+            border: `1px solid ${c.color}55`,
+            borderRadius: 12,
+            color: C.text,
+            fontFamily: C.mono,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            minWidth: 0,
+          }}
+        >
+          <div style={{ fontSize: 18 }}>{c.icon}</div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 12, color: c.color, fontWeight: 700 }}>{c.text}</div>
+            <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{c.sub}</div>
+          </div>
+        </button>
+      ))}
     </div>
   )
 }

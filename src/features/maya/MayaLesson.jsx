@@ -4,6 +4,7 @@ import {
   startLessonCapture, stopLessonCapture,
   generateQuiz, extractKeyPoints, extractConcepts, saveLesson,
 } from './agents/lessonAnalyst'
+import { addConceptsFromLesson } from './agents/memory'
 import { useMaya } from './context/MayaContext'
 import MayaAvatar from './components/Maya3D'
 
@@ -115,6 +116,10 @@ export default function MayaLesson() {
       completedAt: new Date().toISOString(),
     }
     saveLesson(lessonRecord)
+
+    // Feed concepts into spaced-repetition memory
+    const concepts = extractConcepts(lessonResult.fullTranscript)
+    addConceptsFromLesson(lessonResult, concepts)
 
     // Push a synthetic completion message into the chat
     const summary = `Just finished a ${lessonResult.durationMin}-min ${subject} lesson. Key takeaway: ${keyPoints[0] || 'reviewed core concepts'}. Answered ${filled}/${quiz.length} quiz questions.`
