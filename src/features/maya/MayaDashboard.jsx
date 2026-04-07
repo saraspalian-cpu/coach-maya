@@ -70,10 +70,10 @@ export default function MayaDashboard() {
       {/* ─── Maya Avatar Hero ─── */}
       <div style={{
         background: `radial-gradient(ellipse at center, ${C.surfaceLight} 0%, ${C.bg} 70%)`,
-        padding: '20px 0 8px',
+        padding: '8px 0 4px',
         borderBottom: `1px solid ${C.border}`,
       }}>
-        <MayaAvatar state={avatarState} size={160} />
+        <MayaAvatar state={avatarState} size={320} />
         <div style={{ textAlign: 'center', marginTop: 4 }}>
           <div style={{
             fontFamily: C.display,
