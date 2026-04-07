@@ -23,7 +23,7 @@ useGLTF.preload('/maya.glb')
 export default function MayaAvatar({ state = 'idle', size = 900 }) {
   const glow = state === 'urgent' ? '#EF4444' : state === 'celebrating' ? '#FFD700' : '#2DD4BF'
   return (
-    <div style={{ width: '100vw', height: size, marginLeft: 'calc(50% - 50vw)', filter: 'drop-shadow(0 0 20px ' + glow + '55)' }}>
+    <div style={{ width: size, height: size, margin: '0 auto', filter: 'drop-shadow(0 0 20px ' + glow + '55)' }}>
       <Canvas camera={{ position: [0, 0, 7], fov: 30 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 5, 5]} intensity={1.2} />
