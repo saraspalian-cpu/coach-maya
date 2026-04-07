@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 import { LEVELS, ACHIEVEMENTS } from './agents/gamification'
+import MayaAvatar, { STATES as AVATAR_STATES } from './components/MayaAvatar'
 
 // ─── Color Palette (Dark theme matching Cluny) ───
 const C = {
@@ -45,6 +46,19 @@ export default function MayaDashboard() {
   const totalCount = tasks.length
   const progressPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
+  // Avatar state logic
+  const avatarState = useMemo(() => {
+    const lastMsg = messages[messages.length - 1]
+    const isSpeaking = lastMsg && (Date.now() - new Date(lastMsg.timestamp).getTime()) < 5000 && lastMsg.type !== 'user'
+    if (isSpeaking && lastMsg.type === 'achievement') return 'celebrating'
+    if (isSpeaking) return 'speaking'
+    if (comboTimeLeft !== null && comboTimeLeft > 0 && comboTimeLeft <= 10) return 'urgent'
+    if (completedCount === totalCount && totalCount > 0) return 'celebrating'
+    const hour = new Date().getHours()
+    if (hour < 6 || hour > 22) return 'sleeping'
+    return 'idle'
+  }, [messages, comboTimeLeft, completedCount, totalCount])
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -53,16 +67,38 @@ export default function MayaDashboard() {
       fontFamily: C.mono,
       paddingBottom: 80,
     }}>
-      {/* ─── Header ─── */}
+      {/* ─── Maya Avatar Hero ─── */}
       <div style={{
-        padding: '20px 16px 12px',
+        background: `radial-gradient(ellipse at center, ${C.surfaceLight} 0%, ${C.bg} 70%)`,
+        padding: '20px 0 8px',
+        borderBottom: `1px solid ${C.border}`,
+      }}>
+        <MayaAvatar state={avatarState} size={160} />
+        <div style={{ textAlign: 'center', marginTop: 4 }}>
+          <div style={{
+            fontFamily: C.display,
+            fontSize: 22,
+            letterSpacing: 3,
+            color: C.teal,
+          }}>
+            COACH MAYA
+          </div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>
+            {avatarState === 'sleeping' ? 'Resting...' : avatarState === 'celebrating' ? 'LET\'S GO!' : avatarState === 'urgent' ? 'Combo at risk!' : avatarState === 'speaking' ? 'Speaking...' : `Level ${gam.level?.level} ${gam.level?.title}`}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Stats Header ─── */}
+      <div style={{
+        padding: '12px 16px',
         borderBottom: `1px solid ${C.border}`,
         background: C.surface,
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div>
             <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              Coach Maya
+              Vasco's HQ
             </div>
             <div style={{
               fontFamily: C.display,
