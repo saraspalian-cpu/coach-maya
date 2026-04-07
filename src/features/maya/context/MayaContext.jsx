@@ -1,7 +1,11 @@
-import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react'
+import { createContext, useContext, useReducer, useEffect, useCallback, useRef, useState } from 'react'
 import { createInitialState } from '../agents/gamification'
 import { getComboTimeLeft } from '../agents/scheduler'
 import { evaluateResponse, createSpotCheckRecord } from '../agents/antiGaming'
+import { recordEvent } from '../agents/personalityLearner'
+import { generateDailyReport } from '../agents/parentIntelligence'
+import { loadProfile, saveProfile, buildPersonalityContext } from '../lib/profile'
+import { speak, cancelSpeech, listen, isSTTSupported } from '../lib/voice'
 import {
   handleTaskComplete,
   handleTaskSkip,
@@ -14,7 +18,6 @@ import {
 
 const MayaContext = createContext(null)
 
-// ─── Local Storage Keys ───
 const STORAGE_KEY = 'maya_state'
 const SCHEDULE_KEY = 'maya_schedule'
 const HISTORY_KEY = 'maya_history'
@@ -25,29 +28,23 @@ function loadFromStorage(key, fallback) {
     return raw ? JSON.parse(raw) : fallback
   } catch { return fallback }
 }
-
 function saveToStorage(key, data) {
   try { localStorage.setItem(key, JSON.stringify(data)) } catch {}
 }
 
-// ─── Default Schedule (Vasco's typical day) ───
 const DEFAULT_SCHEDULE = [
-  { id: '1', name: 'Maths', type: 'maths', startTime: null, duration: 45, completed: false },
-  { id: '2', name: 'Reading', type: 'reading', startTime: null, duration: 30, completed: false },
-  { id: '3', name: 'Tennis', type: 'tennis', startTime: null, duration: 60, completed: false },
-  { id: '4', name: 'Piano', type: 'piano', startTime: null, duration: 30, completed: false },
+  { id: '1', name: 'Maths',      type: 'maths',     startTime: null, duration: 45, completed: false },
+  { id: '2', name: 'Reading',    type: 'reading',   startTime: null, duration: 30, completed: false },
+  { id: '3', name: 'Tennis',     type: 'tennis',    startTime: null, duration: 60, completed: false },
+  { id: '4', name: 'Piano',      type: 'piano',     startTime: null, duration: 30, completed: false },
   { id: '5', name: 'Reflection', type: 'reflection', startTime: null, duration: 10, completed: false },
 ]
 
-// ─── Reducer ───
 function mayaReducer(state, action) {
   switch (action.type) {
-    case 'SET_STATE':
-      return { ...state, ...action.payload }
-    case 'ADD_MESSAGE':
-      return { ...state, messages: [...state.messages, action.payload] }
-    case 'ADD_MESSAGES':
-      return { ...state, messages: [...state.messages, ...action.payload] }
+    case 'SET_STATE': return { ...state, ...action.payload }
+    case 'ADD_MESSAGE': return { ...state, messages: [...state.messages, action.payload] }
+    case 'ADD_MESSAGES': return { ...state, messages: [...state.messages, ...action.payload] }
     case 'COMPLETE_TASK': {
       const tasks = state.tasks.map(t =>
         t.id === action.payload.id ? { ...t, completed: true, completedAt: new Date().toISOString() } : t
@@ -60,40 +57,30 @@ function mayaReducer(state, action) {
       )
       return { ...state, tasks }
     }
-    case 'SET_TASKS':
-      return { ...state, tasks: action.payload }
-    case 'SET_GAMIFICATION':
-      return { ...state, gamification: action.payload }
-    case 'SET_PENDING_SPOT_CHECK':
-      return { ...state, pendingSpotCheck: action.payload }
-    case 'CLEAR_SPOT_CHECK':
-      return { ...state, pendingSpotCheck: null }
-    case 'SET_MOOD':
-      return { ...state, todayMood: action.payload }
-    case 'ADD_SPOT_CHECK':
-      return { ...state, spotChecks: [...(state.spotChecks || []), action.payload] }
+    case 'SET_TASKS': return { ...state, tasks: action.payload }
+    case 'SET_GAMIFICATION': return { ...state, gamification: action.payload }
+    case 'SET_PENDING_SPOT_CHECK': return { ...state, pendingSpotCheck: action.payload }
+    case 'CLEAR_SPOT_CHECK': return { ...state, pendingSpotCheck: null }
+    case 'SET_MOOD': return { ...state, todayMood: action.payload }
+    case 'ADD_SPOT_CHECK': return { ...state, spotChecks: [...(state.spotChecks || []), action.payload] }
+    case 'SET_PROFILE': return { ...state, profile: action.payload, personalityContext: buildPersonalityContext(action.payload) }
+    case 'SET_VOICE_STATE': return { ...state, voiceState: action.payload }
     case 'RESET_DAY': {
       const tasks = state.tasks.map(t => ({ ...t, completed: false, skipped: false, completedAt: null }))
       return {
-        ...state,
-        tasks,
-        messages: [],
-        dayLog: [],
-        todayMood: null,
-        pendingSpotCheck: null,
-        spotChecks: [],
+        ...state, tasks, messages: [], dayLog: [], todayMood: null,
+        pendingSpotCheck: null, spotChecks: [],
         gamification: createInitialState(tasks.length),
       }
     }
-    default:
-      return state
+    default: return state
   }
 }
 
-// ─── Provider ───
 function MayaProvider({ children }) {
   const savedState = loadFromStorage(STORAGE_KEY, null)
   const savedSchedule = loadFromStorage(SCHEDULE_KEY, DEFAULT_SCHEDULE)
+  const initialProfile = loadProfile()
 
   const initialTasks = savedSchedule.map(t => ({ ...t, completed: false, skipped: false }))
   const initialState = {
@@ -106,34 +93,53 @@ function MayaProvider({ children }) {
     pendingSpotCheck: savedState?.pendingSpotCheck || null,
     spotChecks: savedState?.spotChecks || [],
     todayMood: savedState?.todayMood || null,
-    streak: savedState?.streak || 0,
-    personalityContext: savedState?.personalityContext || '',
+    streak: savedState?.streak || initialProfile.currentStreak || 0,
+    profile: initialProfile,
+    personalityContext: buildPersonalityContext(initialProfile),
+    voiceState: 'idle', // idle | speaking | listening
   }
 
   const [state, dispatch] = useReducer(mayaReducer, initialState)
   const tickRef = useRef(null)
+  const lastSpokenIdRef = useRef(null)
+  const stopListenRef = useRef(null)
+  const [isListening, setIsListening] = useState(false)
+  const [interimTranscript, setInterimTranscript] = useState('')
 
-  // Persist state on every change
+  // Persist
   useEffect(() => {
-    saveToStorage(STORAGE_KEY, state)
+    const { profile, personalityContext, voiceState, ...rest } = state
+    saveToStorage(STORAGE_KEY, rest)
   }, [state])
+
+  // Auto-speak Maya messages
+  useEffect(() => {
+    if (!state.profile?.voiceAutoSpeak) return
+    const last = state.messages[state.messages.length - 1]
+    if (!last || last.type === 'user') return
+    const id = last.timestamp + (last.text?.slice(0, 20) || '')
+    if (lastSpokenIdRef.current === id) return
+    lastSpokenIdRef.current = id
+    dispatch({ type: 'SET_VOICE_STATE', payload: 'speaking' })
+    speak(last.text, {
+      onEnd: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
+      onError: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
+    })
+  }, [state.messages, state.profile])
 
   // ─── Actions ───
   const completeTask = useCallback(async (taskId) => {
     const task = state.tasks.find(t => t.id === taskId)
     if (!task || task.completed) return
-
     dispatch({ type: 'COMPLETE_TASK', payload: { id: taskId } })
 
-    const orchestratorState = {
+    const result = await handleTaskComplete(task, {
       gamification: state.gamification,
       unlockedAchievements: state.unlockedAchievements,
       lastActivityTime: state.lastActivityTime,
       dayLog: state.dayLog,
       tasks: state.tasks,
-    }
-
-    const result = await handleTaskComplete(task, orchestratorState, state.personalityContext)
+    }, state.personalityContext)
 
     dispatch({ type: 'SET_STATE', payload: {
       gamification: result.state.gamification,
@@ -142,16 +148,18 @@ function MayaProvider({ children }) {
       dayLog: result.state.dayLog,
       pendingSpotCheck: result.state.pendingSpotCheck || null,
     }})
-
     if (result.messages.length > 0) {
       dispatch({ type: 'ADD_MESSAGES', payload: result.messages })
     }
+
+    // Personality learner
+    const updated = recordEvent({ type: 'task_complete', payload: { taskType: task.type } })
+    dispatch({ type: 'SET_PROFILE', payload: updated })
   }, [state])
 
   const skipTask = useCallback(async (taskId) => {
     const task = state.tasks.find(t => t.id === taskId)
     if (!task) return
-
     dispatch({ type: 'SKIP_TASK', payload: { id: taskId } })
 
     const result = await handleTaskSkip(task, {
@@ -163,6 +171,8 @@ function MayaProvider({ children }) {
     if (result.messages.length > 0) {
       dispatch({ type: 'ADD_MESSAGES', payload: result.messages })
     }
+    const updated = recordEvent({ type: 'task_skip', payload: { taskType: task.type } })
+    dispatch({ type: 'SET_PROFILE', payload: updated })
   }, [state])
 
   const sendMessage = useCallback(async (text) => {
@@ -171,6 +181,8 @@ function MayaProvider({ children }) {
     if (result.messages.length > 0) {
       dispatch({ type: 'ADD_MESSAGES', payload: result.messages })
     }
+    const updated = recordEvent({ type: 'chat_user', payload: { text } })
+    dispatch({ type: 'SET_PROFILE', payload: updated })
   }, [state])
 
   const setMood = useCallback(async (mood) => {
@@ -181,6 +193,8 @@ function MayaProvider({ children }) {
       dayLog: result.state.dayLog,
     }})
     dispatch({ type: 'SET_MOOD', payload: mood })
+    const updated = recordEvent({ type: 'mood', payload: { mood } })
+    dispatch({ type: 'SET_PROFILE', payload: updated })
   }, [state])
 
   const submitReflection = useCallback(async (text) => {
@@ -201,24 +215,85 @@ function MayaProvider({ children }) {
     dispatch({ type: 'SET_STATE', payload: { gamification: createInitialState(tasks.length) } })
   }, [])
 
-  const resetDay = useCallback(() => {
-    dispatch({ type: 'RESET_DAY' })
-  }, [])
+  const resetDay = useCallback(() => dispatch({ type: 'RESET_DAY' }), [])
+
+  const updateProfile = useCallback((patch) => {
+    const next = { ...state.profile, ...patch }
+    saveProfile(next)
+    dispatch({ type: 'SET_PROFILE', payload: next })
+  }, [state.profile])
 
   const respondToSpotCheck = useCallback((response) => {
     if (!state.pendingSpotCheck) return
     const evaluation = evaluateResponse(response)
     const record = createSpotCheckRecord(
       { id: state.pendingSpotCheck.taskId, name: state.pendingSpotCheck.taskName, type: state.pendingSpotCheck.taskType },
-      state.pendingSpotCheck.question,
-      response,
-      evaluation
+      state.pendingSpotCheck.question, response, evaluation
     )
     dispatch({ type: 'ADD_SPOT_CHECK', payload: record })
     dispatch({ type: 'CLEAR_SPOT_CHECK' })
   }, [state.pendingSpotCheck])
 
-  // ─── Schedule Tick (every 5 min) ───
+  // ─── Voice: listen for user voice input ───
+  const startListening = useCallback(() => {
+    if (!isSTTSupported()) {
+      alert('Voice input not supported in this browser. Try Chrome or Safari.')
+      return
+    }
+    cancelSpeech()
+    setIsListening(true)
+    setInterimTranscript('')
+    dispatch({ type: 'SET_VOICE_STATE', payload: 'listening' })
+    stopListenRef.current = listen({
+      onResult: (transcript, isFinal) => {
+        setInterimTranscript(transcript)
+        if (isFinal && transcript) {
+          sendMessage(transcript)
+          setInterimTranscript('')
+        }
+      },
+      onEnd: () => {
+        setIsListening(false)
+        dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' })
+      },
+      onError: () => {
+        setIsListening(false)
+        dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' })
+      },
+    })
+  }, [sendMessage])
+
+  const stopListening = useCallback(() => {
+    if (stopListenRef.current) stopListenRef.current()
+    setIsListening(false)
+    dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' })
+  }, [])
+
+  const stopSpeaking = useCallback(() => {
+    cancelSpeech()
+    dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' })
+  }, [])
+
+  const speakText = useCallback((text) => {
+    dispatch({ type: 'SET_VOICE_STATE', payload: 'speaking' })
+    speak(text, {
+      onEnd: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
+      onError: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
+    })
+  }, [])
+
+  const getDailyReport = useCallback(() => {
+    return generateDailyReport({
+      dayLog: state.dayLog,
+      gamification: state.gamification,
+      tasks: state.tasks,
+      mood: state.todayMood,
+      reflection: state.dayLog.find(e => e.type === 'reflection')?.text,
+      spotChecks: state.spotChecks,
+    })
+  }, [state])
+
+  // Schedule Tick (every 5 min)
   useEffect(() => {
     tickRef.current = setInterval(async () => {
       const result = await handleScheduleTick({
@@ -229,15 +304,13 @@ function MayaProvider({ children }) {
       if (result.messages.length > 0) {
         dispatch({ type: 'ADD_MESSAGES', payload: result.messages })
       }
-    }, 5 * 60 * 1000) // 5 minutes
-
+    }, 5 * 60 * 1000)
     return () => clearInterval(tickRef.current)
   }, [state.tasks, state.gamification, state.lastActivityTime, state.personalityContext])
 
   const comboTimeLeft = getComboTimeLeft(state.lastActivityTime)
 
   const value = {
-    // State
     tasks: state.tasks,
     gamification: state.gamification,
     messages: state.messages,
@@ -247,8 +320,11 @@ function MayaProvider({ children }) {
     spotChecks: state.spotChecks,
     todayMood: state.todayMood,
     streak: state.streak,
+    profile: state.profile,
+    voiceState: state.voiceState,
+    isListening,
+    interimTranscript,
     comboTimeLeft,
-    // Actions
     completeTask,
     skipTask,
     sendMessage,
@@ -257,6 +333,12 @@ function MayaProvider({ children }) {
     updateSchedule,
     resetDay,
     respondToSpotCheck,
+    updateProfile,
+    startListening,
+    stopListening,
+    stopSpeaking,
+    speakText,
+    getDailyReport,
   }
 
   return <MayaContext.Provider value={value}>{children}</MayaContext.Provider>

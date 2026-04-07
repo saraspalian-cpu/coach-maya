@@ -4,7 +4,6 @@ import { useMaya } from './context/MayaContext'
 import { LEVELS, ACHIEVEMENTS } from './agents/gamification'
 import MayaAvatar from './components/Maya3D'
 
-// ─── Color Palette (Dark theme matching Cluny) ───
 const C = {
   bg: '#060c18',
   surface: '#0c1624',
@@ -24,19 +23,20 @@ const C = {
   display: "'Bebas Neue', sans-serif",
 }
 
-// ─── Grade Colors ───
 const gradeColors = { S: C.gold, A: C.green, B: C.blue, C: C.amber, F: C.red, '-': C.dim }
 
 export default function MayaDashboard() {
   const maya = useMaya()
   const [chatInput, setChatInput] = useState('')
   const [spotCheckInput, setSpotCheckInput] = useState('')
-  const [showChat, setShowChat] = useState(false)
-  const [activeTab, setActiveTab] = useState('tasks') // tasks | stats | chat
+  const [activeTab, setActiveTab] = useState('tasks')
   const messagesEndRef = useRef(null)
-
   const navigate = useNavigate()
-  const { gamification: gam, tasks, messages, comboTimeLeft, pendingSpotCheck, todayMood } = maya
+
+  const {
+    gamification: gam, tasks, messages, comboTimeLeft, pendingSpotCheck,
+    todayMood, voiceState, isListening, profile,
+  } = maya
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -46,18 +46,27 @@ export default function MayaDashboard() {
   const totalCount = tasks.length
   const progressPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
-  // Avatar state logic
+  // Avatar state — driven by voice + game state
   const avatarState = useMemo(() => {
+    if (voiceState === 'speaking') return 'speaking'
+    if (voiceState === 'listening') return 'thinking'
     const lastMsg = messages[messages.length - 1]
-    const isSpeaking = lastMsg && (Date.now() - new Date(lastMsg.timestamp).getTime()) < 5000 && lastMsg.type !== 'user'
-    if (isSpeaking && lastMsg.type === 'achievement') return 'celebrating'
-    if (isSpeaking) return 'speaking'
+    if (lastMsg && lastMsg.type === 'achievement' && (Date.now() - new Date(lastMsg.timestamp).getTime()) < 6000) return 'celebrating'
     if (comboTimeLeft !== null && comboTimeLeft > 0 && comboTimeLeft <= 10) return 'urgent'
     if (completedCount === totalCount && totalCount > 0) return 'celebrating'
     const hour = new Date().getHours()
     if (hour < 6 || hour > 22) return 'sleeping'
     return 'idle'
-  }, [messages, comboTimeLeft, completedCount, totalCount])
+  }, [voiceState, messages, comboTimeLeft, completedCount, totalCount])
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    const name = profile?.name || 'you'
+    if (hour < 12) return `Morning, ${name}.`
+    if (hour < 17) return `Afternoon, ${name}.`
+    if (hour < 21) return `Evening, ${name}.`
+    return `Late one, ${name}.`
+  }, [profile])
 
   return (
     <div style={{
@@ -69,22 +78,48 @@ export default function MayaDashboard() {
     }}>
       {/* ─── Maya Avatar Hero ─── */}
       <div style={{
-        background: `radial-gradient(ellipse at center, ${C.surfaceLight} 0%, ${C.bg} 70%)`,
-        padding: '8px 0 4px',
+        background: `radial-gradient(ellipse at center top, ${C.surfaceLight} 0%, ${C.bg} 70%)`,
+        padding: '12px 0 4px',
         borderBottom: `1px solid ${C.border}`,
+        position: 'relative',
       }}>
-        <MayaAvatar state={avatarState} size={900} />
+        <MayaAvatar state={avatarState} size={300} />
+
+        {/* Voice control floating button */}
+        <button
+          onClick={isListening ? maya.stopListening : maya.startListening}
+          style={{
+            position: 'absolute',
+            right: 16, top: 16,
+            width: 44, height: 44, borderRadius: 22,
+            background: isListening ? C.red : C.teal + '22',
+            border: `1px solid ${isListening ? C.red : C.teal}`,
+            color: isListening ? '#fff' : C.teal,
+            fontSize: 18, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: isListening ? `0 0 16px ${C.red}88` : 'none',
+            transition: 'all 200ms ease',
+          }}
+          title={isListening ? 'Stop listening' : 'Talk to Maya'}
+        >🎤</button>
+
+        {/* Greeting */}
         <div style={{ textAlign: 'center', marginTop: 4 }}>
           <div style={{
             fontFamily: C.display,
-            fontSize: 22,
-            letterSpacing: 3,
+            fontSize: 26,
+            letterSpacing: 2.5,
             color: C.teal,
           }}>
-            COACH MAYA
+            {greeting.toUpperCase()}
           </div>
-          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>
-            {avatarState === 'sleeping' ? 'Resting...' : avatarState === 'celebrating' ? 'LET\'S GO!' : avatarState === 'urgent' ? 'Combo at risk!' : avatarState === 'speaking' ? 'Speaking...' : `Level ${gam.level?.level} ${gam.level?.title}`}
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+            {avatarState === 'sleeping' ? 'Resting...' :
+             avatarState === 'celebrating' ? 'LET\'S GO!' :
+             avatarState === 'urgent' ? 'Combo at risk!' :
+             avatarState === 'speaking' ? '● Speaking...' :
+             avatarState === 'thinking' ? '● Listening...' :
+             `Level ${gam.level?.level} · ${gam.level?.title}`}
           </div>
         </div>
       </div>
@@ -97,36 +132,28 @@ export default function MayaDashboard() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              Vasco's HQ
+            <div style={{ fontSize: 10, color: C.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
+              {profile?.name || 'Vasco'}'s HQ
             </div>
             <div style={{
               fontFamily: C.display,
-              fontSize: 28,
+              fontSize: 26,
               letterSpacing: 2,
               color: C.teal,
               lineHeight: 1,
               marginTop: 2,
             }}>
-              VASCO'S HQ
+              {(profile?.name || 'VASCO').toUpperCase()}'S HQ
             </div>
           </div>
-          <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div>
+          <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 22 }}>{gam.level?.icon}</div>
-              <div style={{ fontSize: 10, color: C.muted }}>{gam.level?.title}</div>
+              <div style={{ fontSize: 9, color: C.muted }}>{gam.level?.title}</div>
             </div>
-            <button
-              onClick={() => navigate('/schedule')}
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                border: `1px solid ${C.border}`, background: 'transparent',
-                color: C.muted, fontSize: 16, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              ⚙
-            </button>
+            <IconBtn onClick={() => navigate('/profile')} title="Profile">👤</IconBtn>
+            <IconBtn onClick={() => navigate('/parent')} title="Parent report">📊</IconBtn>
+            <IconBtn onClick={() => navigate('/schedule')} title="Schedule">⚙</IconBtn>
           </div>
         </div>
 
@@ -136,12 +163,7 @@ export default function MayaDashboard() {
             <span>LVL {gam.level?.level} — {gam.totalXP} XP</span>
             <span>{gam.level?.xpToNext > 0 ? `${gam.level.xpToNext} to next` : 'MAX'}</span>
           </div>
-          <div style={{
-            height: 6,
-            background: C.dim,
-            borderRadius: 3,
-            overflow: 'hidden',
-          }}>
+          <div style={{ height: 6, background: C.dim, borderRadius: 3, overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${(gam.level?.progress || 0) * 100}%`,
@@ -153,27 +175,18 @@ export default function MayaDashboard() {
         </div>
 
         {/* Stats Row */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginTop: 14,
-          gap: 8,
-        }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, gap: 8 }}>
           <StatBox label="Grade" value={gam.dayGrade?.grade || '-'} color={gradeColors[gam.dayGrade?.grade] || C.dim} />
           <StatBox label="Combo" value={`${gam.combo}×`} sub={gam.comboLabel} color={gam.combo >= 5 ? C.gold : gam.combo >= 3 ? C.amber : C.muted} />
           <StatBox label="Done" value={`${completedCount}/${totalCount}`} color={completedCount === totalCount && totalCount > 0 ? C.green : C.blue} />
           {comboTimeLeft !== null && comboTimeLeft > 0 && (
-            <StatBox label="Combo Timer" value={`${comboTimeLeft}m`} color={comboTimeLeft <= 10 ? C.red : C.amber} />
+            <StatBox label="Timer" value={`${comboTimeLeft}m`} color={comboTimeLeft <= 10 ? C.red : C.amber} />
           )}
         </div>
       </div>
 
       {/* ─── Tab Bar ─── */}
-      <div style={{
-        display: 'flex',
-        borderBottom: `1px solid ${C.border}`,
-        background: C.surface,
-      }}>
+      <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, background: C.surface }}>
         {['tasks', 'stats', 'chat'].map(tab => (
           <button
             key={tab}
@@ -191,24 +204,17 @@ export default function MayaDashboard() {
               letterSpacing: 1,
               cursor: 'pointer',
             }}
-          >
-            {tab}
-          </button>
+          >{tab}</button>
         ))}
       </div>
 
       {/* ─── Content ─── */}
       <div style={{ padding: '12px 16px' }}>
-        {activeTab === 'tasks' && (
-          <TasksTab maya={maya} C={C} />
-        )}
-        {activeTab === 'stats' && (
-          <StatsTab maya={maya} C={C} gradeColors={gradeColors} />
-        )}
+        {activeTab === 'tasks' && <TasksTab maya={maya} />}
+        {activeTab === 'stats' && <StatsTab maya={maya} />}
         {activeTab === 'chat' && (
           <ChatTab
             maya={maya}
-            C={C}
             chatInput={chatInput}
             setChatInput={setChatInput}
             messagesEndRef={messagesEndRef}
@@ -220,12 +226,8 @@ export default function MayaDashboard() {
       {pendingSpotCheck && (
         <div style={{
           position: 'fixed',
-          bottom: 70,
-          left: 0,
-          right: 0,
-          maxWidth: 430,
-          margin: '0 auto',
-          padding: 16,
+          bottom: 70, left: 0, right: 0,
+          maxWidth: 480, margin: '0 auto', padding: 16,
           background: C.surfaceLight,
           borderTop: `2px solid ${C.amber}`,
           zIndex: 100,
@@ -240,15 +242,9 @@ export default function MayaDashboard() {
               onChange={e => setSpotCheckInput(e.target.value)}
               placeholder="Your answer..."
               style={{
-                flex: 1,
-                padding: '8px 12px',
-                background: C.bg,
-                border: `1px solid ${C.border}`,
-                borderRadius: 8,
-                color: C.text,
-                fontSize: 13,
-                fontFamily: C.mono,
-                outline: 'none',
+                flex: 1, padding: '8px 12px', background: C.bg,
+                border: `1px solid ${C.border}`, borderRadius: 8,
+                color: C.text, fontSize: 13, fontFamily: C.mono, outline: 'none',
               }}
               onKeyDown={e => {
                 if (e.key === 'Enter' && spotCheckInput.trim()) {
@@ -265,155 +261,127 @@ export default function MayaDashboard() {
                 }
               }}
               style={{
-                padding: '8px 16px',
-                background: C.amber,
-                color: C.bg,
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 12,
-                fontFamily: C.mono,
-                fontWeight: 600,
-                cursor: 'pointer',
+                padding: '8px 16px', background: C.amber, color: C.bg,
+                border: 'none', borderRadius: 8, fontSize: 12,
+                fontFamily: C.mono, fontWeight: 600, cursor: 'pointer',
               }}
-            >
-              Send
-            </button>
+            >Send</button>
           </div>
         </div>
       )}
 
-      {/* ─── Mood Check (if not set) ─── */}
-      {!todayMood && completedCount >= 1 && activeTab === 'tasks' && (
-        <MoodPicker maya={maya} C={C} />
+      {/* ─── Listening Overlay ─── */}
+      {isListening && (
+        <div style={{
+          position: 'fixed',
+          bottom: 70, left: 0, right: 0,
+          maxWidth: 480, margin: '0 auto', padding: 16,
+          background: C.surfaceLight,
+          borderTop: `2px solid ${C.teal}`,
+          zIndex: 110,
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{
+            width: 12, height: 12, borderRadius: 6, background: C.red,
+            animation: 'pulse 1.4s infinite',
+          }} />
+          <div style={{ fontSize: 12, color: C.text, flex: 1 }}>
+            {maya.interimTranscript || 'Listening...'}
+          </div>
+          <button onClick={maya.stopListening} style={{
+            padding: '6px 12px', background: 'transparent',
+            border: `1px solid ${C.border}`, borderRadius: 8,
+            color: C.muted, fontSize: 11, fontFamily: C.mono, cursor: 'pointer',
+          }}>Stop</button>
+        </div>
+      )}
+
+      {/* ─── Mood Check ─── */}
+      {!todayMood && completedCount >= 1 && activeTab === 'tasks' && !pendingSpotCheck && !isListening && (
+        <MoodPicker maya={maya} />
       )}
     </div>
   )
 }
 
 // ─── Tasks Tab ───
-function TasksTab({ maya, C }) {
-  const { tasks, completeTask, skipTask, gamification } = maya
-
+function TasksTab({ maya }) {
+  const { tasks, completeTask, skipTask } = maya
   return (
     <div>
       <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
         Today's Tasks
       </div>
       {tasks.map((task, i) => (
-        <div
-          key={task.id}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '14px 12px',
-            background: task.completed ? C.surfaceLight : C.surface,
-            borderRadius: 10,
-            marginBottom: 8,
-            border: `1px solid ${task.completed ? C.green + '33' : C.border}`,
-            opacity: task.skipped ? 0.4 : 1,
-          }}
-        >
-          {/* Completion Button */}
+        <div key={task.id} style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 12px',
+          background: task.completed ? C.surfaceLight : C.surface,
+          borderRadius: 10, marginBottom: 8,
+          border: `1px solid ${task.completed ? C.green + '33' : C.border}`,
+          opacity: task.skipped ? 0.4 : 1,
+        }}>
           <button
             onClick={() => !task.completed && !task.skipped && completeTask(task.id)}
             disabled={task.completed || task.skipped}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
+              width: 32, height: 32, borderRadius: '50%',
               border: `2px solid ${task.completed ? C.green : C.dim}`,
               background: task.completed ? C.green : 'transparent',
-              color: task.completed ? C.bg : C.dim,
-              fontSize: 14,
+              color: task.completed ? C.bg : C.dim, fontSize: 14,
               cursor: task.completed || task.skipped ? 'default' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, transition: 'all 0.2s',
             }}
-          >
-            {task.completed ? '✓' : i + 1}
-          </button>
-
-          {/* Task Info */}
+          >{task.completed ? '✓' : i + 1}</button>
           <div style={{ flex: 1 }}>
             <div style={{
-              fontSize: 14,
-              fontWeight: 600,
+              fontSize: 14, fontWeight: 600,
               color: task.completed ? C.green : C.text,
               textDecoration: task.skipped ? 'line-through' : 'none',
-            }}>
-              {task.name}
-            </div>
+            }}>{task.name}</div>
             <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
               {task.duration}min · {task.type}
               {task.completedAt && ` · done ${new Date(task.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
             </div>
           </div>
-
-          {/* Skip Button */}
           {!task.completed && !task.skipped && (
             <button
               onClick={() => skipTask(task.id)}
               style={{
-                padding: '4px 10px',
-                background: 'transparent',
-                border: `1px solid ${C.dim}`,
-                borderRadius: 6,
-                color: C.muted,
-                fontSize: 10,
-                fontFamily: C.mono,
-                cursor: 'pointer',
+                padding: '4px 10px', background: 'transparent',
+                border: `1px solid ${C.dim}`, borderRadius: 6,
+                color: C.muted, fontSize: 10, fontFamily: C.mono, cursor: 'pointer',
               }}
-            >
-              Skip
-            </button>
+            >Skip</button>
           )}
         </div>
       ))}
-
-      {/* Last Maya Message */}
       {maya.messages.length > 0 && (
-        <MayaMessageBubble message={maya.messages[maya.messages.length - 1]} C={C} />
+        <MayaMessageBubble message={maya.messages[maya.messages.length - 1]} />
       )}
     </div>
   )
 }
 
 // ─── Stats Tab ───
-function StatsTab({ maya, C, gradeColors }) {
-  const { gamification: gam, unlockedAchievements, spotChecks, dayLog } = maya
-
+function StatsTab({ maya }) {
+  const { gamification: gam, unlockedAchievements, dayLog } = maya
   return (
     <div>
-      {/* Level Progress */}
-      <div style={{
-        padding: 16,
-        background: C.surface,
-        borderRadius: 10,
-        border: `1px solid ${C.border}`,
-        marginBottom: 12,
-      }}>
-        <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-          Level Progress
-        </div>
+      <div style={{ padding: 16, background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+        <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Level Progress</div>
         {LEVELS.map(lvl => {
           const isActive = gam.level?.level === lvl.level
           const isUnlocked = gam.totalXP >= lvl.xpRequired
           return (
             <div key={lvl.level} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '6px 0',
+              display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0',
               opacity: isUnlocked ? 1 : 0.35,
             }}>
               <span style={{ fontSize: 18 }}>{lvl.icon}</span>
               <span style={{ fontSize: 12, flex: 1, color: isActive ? C.teal : C.text }}>
-                {lvl.title}
-                {isActive && ' ←'}
+                {lvl.title}{isActive && ' ←'}
               </span>
               <span style={{ fontSize: 10, color: C.muted }}>{lvl.xpRequired} XP</span>
             </div>
@@ -421,17 +389,8 @@ function StatsTab({ maya, C, gradeColors }) {
         })}
       </div>
 
-      {/* Achievements */}
-      <div style={{
-        padding: 16,
-        background: C.surface,
-        borderRadius: 10,
-        border: `1px solid ${C.border}`,
-        marginBottom: 12,
-      }}>
-        <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-          Achievements
-        </div>
+      <div style={{ padding: 16, background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+        <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Achievements</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {ACHIEVEMENTS.map(a => {
             const unlocked = unlockedAchievements?.includes(a.id)
@@ -440,10 +399,8 @@ function StatsTab({ maya, C, gradeColors }) {
                 padding: '8px 10px',
                 background: unlocked ? C.surfaceLight : 'transparent',
                 border: `1px solid ${unlocked ? C.gold + '44' : C.dim}`,
-                borderRadius: 8,
-                opacity: unlocked ? 1 : 0.3,
-                textAlign: 'center',
-                minWidth: 80,
+                borderRadius: 8, opacity: unlocked ? 1 : 0.3,
+                textAlign: 'center', minWidth: 80,
               }}>
                 <div style={{ fontSize: 20 }}>{a.icon}</div>
                 <div style={{ fontSize: 9, color: unlocked ? C.gold : C.muted, marginTop: 2 }}>{a.title}</div>
@@ -453,22 +410,12 @@ function StatsTab({ maya, C, gradeColors }) {
         </div>
       </div>
 
-      {/* Today's Log */}
       {dayLog && dayLog.length > 0 && (
-        <div style={{
-          padding: 16,
-          background: C.surface,
-          borderRadius: 10,
-          border: `1px solid ${C.border}`,
-        }}>
-          <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-            Today's Activity
-          </div>
+        <div style={{ padding: 16, background: C.surface, borderRadius: 10, border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Today's Activity</div>
           {dayLog.map((entry, i) => (
             <div key={i} style={{
-              fontSize: 11,
-              color: C.muted,
-              padding: '4px 0',
+              fontSize: 11, color: C.muted, padding: '4px 0',
               borderBottom: i < dayLog.length - 1 ? `1px solid ${C.border}` : 'none',
             }}>
               <span style={{ color: entry.type === 'task_complete' ? C.green : entry.type === 'task_skip' ? C.red : C.blue }}>
@@ -488,37 +435,32 @@ function StatsTab({ maya, C, gradeColors }) {
 }
 
 // ─── Chat Tab ───
-function ChatTab({ maya, C, chatInput, setChatInput, messagesEndRef }) {
+function ChatTab({ maya, chatInput, setChatInput, messagesEndRef }) {
   const handleSend = () => {
     if (!chatInput.trim()) return
     maya.sendMessage(chatInput.trim())
     setChatInput('')
   }
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 240px)' }}>
-      {/* Messages */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 540px)', minHeight: 320 }}>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 12 }}>
         {maya.messages.length === 0 && (
           <div style={{ textAlign: 'center', color: C.dim, fontSize: 12, marginTop: 40 }}>
-            Talk to Maya. She's listening.
+            Talk to Maya. Tap the 🎤 to use your voice.
           </div>
         )}
         {maya.messages.map((msg, i) => (
           <div key={i} style={{
-            marginBottom: 10,
-            display: 'flex',
+            marginBottom: 10, display: 'flex',
             justifyContent: msg.type === 'user' ? 'flex-end' : 'flex-start',
           }}>
             <div style={{
-              maxWidth: '80%',
-              padding: '10px 14px',
+              maxWidth: '80%', padding: '10px 14px',
               borderRadius: msg.type === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
               background: msg.type === 'user' ? C.blue + '22' : msg.type === 'achievement' ? C.gold + '22' : C.surfaceLight,
               border: `1px solid ${msg.type === 'user' ? C.blue + '33' : msg.type === 'achievement' ? C.gold + '33' : C.border}`,
               color: msg.type === 'achievement' ? C.gold : C.text,
-              fontSize: 13,
-              lineHeight: 1.5,
+              fontSize: 13, lineHeight: 1.5,
             }}>
               {msg.type !== 'user' && msg.type !== 'achievement' && (
                 <div style={{ fontSize: 9, color: C.teal, marginBottom: 3, textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -535,60 +477,37 @@ function ChatTab({ maya, C, chatInput, setChatInput, messagesEndRef }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div style={{
-        display: 'flex',
-        gap: 8,
-        padding: '12px 0',
-        borderTop: `1px solid ${C.border}`,
-      }}>
+      <div style={{ display: 'flex', gap: 8, padding: '12px 0', borderTop: `1px solid ${C.border}` }}>
         <input
           value={chatInput}
           onChange={e => setChatInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
           placeholder="Talk to Maya..."
           style={{
-            flex: 1,
-            padding: '10px 14px',
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: 10,
-            color: C.text,
-            fontSize: 13,
-            fontFamily: C.mono,
-            outline: 'none',
+            flex: 1, padding: '10px 14px', background: C.surface,
+            border: `1px solid ${C.border}`, borderRadius: 10,
+            color: C.text, fontSize: 13, fontFamily: C.mono, outline: 'none',
           }}
         />
         <button
           onClick={handleSend}
           style={{
-            padding: '10px 18px',
-            background: C.teal,
-            color: C.bg,
-            border: 'none',
-            borderRadius: 10,
-            fontSize: 13,
-            fontFamily: C.mono,
-            fontWeight: 600,
-            cursor: 'pointer',
+            padding: '10px 18px', background: C.teal, color: C.bg,
+            border: 'none', borderRadius: 10, fontSize: 13,
+            fontFamily: C.mono, fontWeight: 600, cursor: 'pointer',
           }}
-        >
-          Send
-        </button>
+        >Send</button>
       </div>
     </div>
   )
 }
 
-// ─── Maya Message Bubble ───
-function MayaMessageBubble({ message, C }) {
+function MayaMessageBubble({ message }) {
   if (!message || message.type === 'user') return null
   return (
     <div style={{
-      marginTop: 16,
-      padding: '14px 16px',
-      background: C.surfaceLight,
-      borderRadius: 12,
+      marginTop: 16, padding: '14px 16px',
+      background: C.surfaceLight, borderRadius: 12,
       borderLeft: `3px solid ${C.teal}`,
     }}>
       <div style={{ fontSize: 9, color: C.teal, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
@@ -599,16 +518,11 @@ function MayaMessageBubble({ message, C }) {
   )
 }
 
-// ─── Stat Box ───
 function StatBox({ label, value, sub, color }) {
   return (
     <div style={{
-      flex: 1,
-      textAlign: 'center',
-      padding: '8px 4px',
-      background: '#0c1624',
-      borderRadius: 8,
-      border: '1px solid #1a2a3e',
+      flex: 1, textAlign: 'center', padding: '8px 4px',
+      background: '#0c1624', borderRadius: 8, border: '1px solid #1a2a3e',
     }}>
       <div style={{ fontSize: 9, color: '#6b7f99', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
       <div style={{ fontSize: 20, fontWeight: 700, color: color || '#e8edf3', lineHeight: 1.2, marginTop: 2 }}>{value}</div>
@@ -617,8 +531,22 @@ function StatBox({ label, value, sub, color }) {
   )
 }
 
-// ─── Mood Picker ───
-function MoodPicker({ maya, C }) {
+function IconBtn({ children, onClick, title }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{
+        width: 32, height: 32, borderRadius: 8,
+        border: `1px solid ${C.border}`, background: 'transparent',
+        color: C.muted, fontSize: 14, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >{children}</button>
+  )
+}
+
+function MoodPicker({ maya }) {
   const moods = [
     { emoji: '🔥', label: 'Fired up' },
     { emoji: '😊', label: 'Good' },
@@ -626,19 +554,11 @@ function MoodPicker({ maya, C }) {
     { emoji: '😤', label: 'Frustrated' },
     { emoji: '😴', label: 'Tired' },
   ]
-
   return (
     <div style={{
-      position: 'fixed',
-      bottom: 70,
-      left: 0,
-      right: 0,
-      maxWidth: 430,
-      margin: '0 auto',
-      padding: '12px 16px',
-      background: C.surfaceLight,
-      borderTop: `1px solid ${C.border}`,
-      zIndex: 90,
+      position: 'fixed', bottom: 70, left: 0, right: 0,
+      maxWidth: 480, margin: '0 auto', padding: '12px 16px',
+      background: C.surfaceLight, borderTop: `1px solid ${C.border}`, zIndex: 90,
     }}>
       <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
         How are you feeling?
@@ -648,13 +568,7 @@ function MoodPicker({ maya, C }) {
           <button
             key={m.label}
             onClick={() => maya.setMood(m.label)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              textAlign: 'center',
-              padding: '4px 8px',
-            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'center', padding: '4px 8px' }}
           >
             <div style={{ fontSize: 24 }}>{m.emoji}</div>
             <div style={{ fontSize: 9, color: C.muted, marginTop: 2 }}>{m.label}</div>
