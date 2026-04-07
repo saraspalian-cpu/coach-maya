@@ -15,7 +15,7 @@ function Model({ state }) {
     else ref.current.position.y = -1.5
     ref.current.rotation.y += delta * 0.15
   })
-  return <primitive ref={ref} object={scene} scale={2} position={[0, -1.5, 0]} />
+  return <primitive ref={ref} object={scene} scale={1} position={[0, -2, 0]} />
 }
 
 useGLTF.preload('/maya.glb')
@@ -24,14 +24,14 @@ export default function MayaAvatar({ state = 'idle', size = 220 }) {
   const glow = state === 'urgent' ? '#EF4444' : state === 'celebrating' ? '#FFD700' : '#2DD4BF'
   return (
     <div style={{ width: size, height: size, margin: '0 auto', filter: 'drop-shadow(0 0 20px ' + glow + '55)' }}>
-      <Canvas camera={{ position: [0, 0.3, 3.5], fov: 35 }}>
+      <Canvas camera={{ position: [0, 0, 7], fov: 30 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[3, 5, 5]} intensity={1.2} />
         <directionalLight position={[-3, 2, -2]} intensity={0.4} color={glow} />
         <Suspense fallback={null}>
           <Model state={state} />
           <Environment preset="studio" />
-          <ContactShadows position={[0, -1.5, 0]} opacity={0.4} scale={5} blur={2.5} />
+          <ContactShadows position={[0, -2, 0]} opacity={0.4} scale={5} blur={2.5} />
         </Suspense>
       </Canvas>
     </div>
