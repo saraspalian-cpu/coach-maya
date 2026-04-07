@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 import { LEVELS, ACHIEVEMENTS } from './agents/gamification'
+import { loadHistory as loadLessonHistory } from './agents/lessonAnalyst'
 import MayaAvatar from './components/Maya3D'
 
 const C = {
@@ -151,7 +152,7 @@ export default function MayaDashboard() {
               <div style={{ fontSize: 22 }}>{gam.level?.icon}</div>
               <div style={{ fontSize: 9, color: C.muted }}>{gam.level?.title}</div>
             </div>
-            <IconBtn onClick={() => navigate('/lesson')} title="Lesson mode">🎙</IconBtn>
+            <IconBtn onClick={() => navigate('/lessons')} title="Lesson vault">🎙</IconBtn>
             <IconBtn onClick={() => navigate('/profile')} title="Profile">👤</IconBtn>
             <IconBtn onClick={() => navigate('/parent')} title="Parent report">📊</IconBtn>
             <IconBtn onClick={() => navigate('/schedule')} title="Schedule">⚙</IconBtn>
@@ -185,6 +186,9 @@ export default function MayaDashboard() {
           )}
         </div>
       </div>
+
+      {/* ─── Lesson CTA — Maya's signature feature ─── */}
+      <LessonCTA navigate={navigate} />
 
       {/* ─── Tab Bar ─── */}
       <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, background: C.surface }}>
@@ -515,6 +519,55 @@ function MayaMessageBubble({ message }) {
         Maya says
       </div>
       <div style={{ fontSize: 13, lineHeight: 1.5 }}>{message.text}</div>
+    </div>
+  )
+}
+
+function LessonCTA({ navigate }) {
+  const lessons = loadLessonHistory()
+  const today = new Date().toISOString().slice(0, 10)
+  const todayLessons = lessons.filter(l => l.startedAt?.startsWith(today))
+  const lastLesson = lessons[0]
+
+  return (
+    <div style={{
+      padding: '14px 16px',
+      background: `linear-gradient(135deg, ${C.teal}11, ${C.surface})`,
+      borderBottom: `1px solid ${C.border}`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 9, color: C.teal, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 2 }}>
+            Maya's signature
+          </div>
+          <div style={{ fontSize: 14, color: C.text, fontWeight: 600, lineHeight: 1.3 }}>
+            Sit through a lesson with me
+          </div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 3 }}>
+            {todayLessons.length > 0
+              ? `${todayLessons.length} lesson${todayLessons.length > 1 ? 's' : ''} today · last: ${lastLesson?.subject}`
+              : lastLesson
+                ? `Last lesson: ${lastLesson.subject} (${lastLesson.durationMin}m)`
+                : "I'll listen and quiz you after"}
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/lesson')}
+          style={{
+            padding: '12px 16px',
+            background: C.teal,
+            color: C.bg,
+            border: 'none',
+            borderRadius: 12,
+            fontSize: 13,
+            fontFamily: C.mono,
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            boxShadow: `0 4px 16px ${C.teal}44`,
+          }}
+        >🎙 Start</button>
+      </div>
     </div>
   )
 }
