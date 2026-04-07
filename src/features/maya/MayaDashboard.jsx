@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 import { LEVELS, ACHIEVEMENTS } from './agents/gamification'
-import MayaAvatar, { STATES as AVATAR_STATES } from './components/MayaAvatar'
+import MayaAvatar from './components/Maya3D'
 
 // ─── Color Palette (Dark theme matching Cluny) ───
 const C = {
