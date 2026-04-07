@@ -10,6 +10,41 @@ const C = {
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 
+// ElevenLabs voice presets — public library voices that match the
+// sarcastic / funny / encouraging / founder-energy vibe
+const VOICE_PRESETS = [
+  {
+    id: 'iP95p4xoKVk53GoZ742B',
+    name: 'Chris',
+    desc: 'Chill American male, conversational — closest to founder/podcaster vibe',
+  },
+  {
+    id: 'TxGEqnHWrfWFTfGW9XjX',
+    name: 'Josh',
+    desc: 'Young American male, confident — relaxed builder energy',
+  },
+  {
+    id: 'pqHfZKP75CvOlQylNhV4',
+    name: 'Bill',
+    desc: 'Older American male, warm — wise mentor vibe',
+  },
+  {
+    id: 'nPczCjzI2devNBz1zQrb',
+    name: 'Brian',
+    desc: 'Deep American narrator — calm authority',
+  },
+  {
+    id: 'yoZ06aMxZJJ28mfd3POQ',
+    name: 'Sam',
+    desc: 'Raspy American male — sarcastic edge',
+  },
+  {
+    id: 'EXAVITQu4vr4xnSDxMaL',
+    name: 'Sarah (female)',
+    desc: 'Warm American female — soft confident coach',
+  },
+]
+
 export default function MayaProfile() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(loadProfile())
@@ -127,10 +162,9 @@ export default function MayaProfile() {
           </Row>
         </Section>
 
-        <Section title="ElevenLabs (premium)">
+        <Section title="ElevenLabs (premium — sounds human)">
           <p style={{ fontSize: 10, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
-            For Pixar-tier voice quality. Get a key from elevenlabs.io.
-            Pick any voice from their library and paste its Voice ID.
+            System voices sound robotic. ElevenLabs sounds real. Get a free API key from elevenlabs.io (10k chars/month free), paste it below, then tap a preset.
           </p>
           <Row label="API Key">
             <input
@@ -141,23 +175,52 @@ export default function MayaProfile() {
               placeholder="sk_..."
             />
           </Row>
-          <Row label="Voice ID">
+
+          <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginTop: 12, marginBottom: 6 }}>
+            Voice presets (sarcastic / funny / encouraging energy)
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {VOICE_PRESETS.map(v => {
+              const active = profile.elevenLabsVoiceId === v.id
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => update({ elevenLabsVoiceId: v.id })}
+                  style={{
+                    padding: '10px 12px', textAlign: 'left',
+                    background: active ? C.teal + '15' : C.bg,
+                    border: `1px solid ${active ? C.teal : C.border}`,
+                    borderRadius: 10, cursor: 'pointer', fontFamily: C.mono,
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: active ? C.teal : C.text, fontWeight: 600 }}>
+                    {v.name} {active && '✓'}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{v.desc}</div>
+                </button>
+              )
+            })}
+          </div>
+
+          <Row label="Or paste any Voice ID">
             <input
-              style={input}
+              style={{ ...input, marginTop: 8 }}
               value={profile.elevenLabsVoiceId || ''}
               onChange={e => update({ elevenLabsVoiceId: e.target.value })}
-              placeholder="EXAVITQu4vr4xnSDxMaL (Sarah default)"
+              placeholder="Paste a Voice ID from elevenlabs.io"
             />
           </Row>
-          {profile.elevenLabsApiKey && (
+
+          {profile.elevenLabsApiKey && profile.elevenLabsVoiceId && (
             <button
               onClick={previewElevenLabs}
               style={{
-                marginTop: 6, padding: '8px 14px', background: C.teal,
-                border: 'none', borderRadius: 8,
-                color: C.bg, fontSize: 11, fontFamily: C.mono, fontWeight: 700, cursor: 'pointer',
+                marginTop: 10, padding: '10px 14px', background: C.teal,
+                border: 'none', borderRadius: 10,
+                color: C.bg, fontSize: 12, fontFamily: C.mono, fontWeight: 700, cursor: 'pointer',
+                width: '100%',
               }}
-            >▶ Preview ElevenLabs voice</button>
+            >▶ Preview voice</button>
           )}
         </Section>
 

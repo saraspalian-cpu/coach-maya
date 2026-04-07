@@ -137,11 +137,17 @@ async function speak(text, { onStart, onBoundary, onEnd, onError } = {}) {
   }
   await waitForVoices()
 
-  const utter = new SpeechSynthesisUtterance(text)
+  // Add subtle natural pauses + slight randomization for human feel
+  const humanizedText = text
+    .replace(/([.!?])\s+/g, '$1 ... ')   // longer pause after sentences
+    .replace(/,\s+/g, ', ')                // tighter commas
+
+  const utter = new SpeechSynthesisUtterance(humanizedText)
   const voice = pickMayaVoice()
   if (voice) utter.voice = voice
-  utter.rate = 1.05
-  utter.pitch = 1.1
+  // Slightly slower + natural pitch + small variation per call
+  utter.rate = 0.96 + (Math.random() * 0.06)
+  utter.pitch = 1.02 + (Math.random() * 0.06)
   utter.volume = 1
 
   utter.onstart = () => onStart?.()
