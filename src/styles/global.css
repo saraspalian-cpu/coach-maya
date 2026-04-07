@@ -1,0 +1,88 @@
+/* ─── Coach Maya — Global Styles ─── */
+
+:root {
+  --bg: #060c18;
+  --surface: #0c1624;
+  --surface-light: #121e30;
+  --border: #1a2a3e;
+  --text: #e8edf3;
+  --muted: #6b7f99;
+  --dim: #3a4f6a;
+  --green: #22C55E;
+  --amber: #FFA500;
+  --gold: #FFD700;
+  --red: #EF4444;
+  --blue: #7db8e8;
+  --teal: #2DD4BF;
+  --purple: #A78BFA;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-display: 'Bebas Neue', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#root {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+}
+
+input, button, textarea {
+  font-family: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-10px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(45, 212, 191, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(45, 212, 191, 0.6); }
+}
+
+.fade-up { animation: fadeUp 0.3s ease both; }
+.pop { animation: pop 0.3s ease both; }
+.pulse { animation: pulse 2s ease infinite; }
+.glow { animation: glow 2s ease infinite; }
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
