@@ -46,7 +46,8 @@ export default function Onboarding() {
 
   const finish = () => {
     saveProfile({ ...profile, setupComplete: true, setupAt: new Date().toISOString() })
-    navigate('/')
+    // Hard reload so MayaProvider re-reads profile from storage
+    window.location.href = '/'
   }
 
   const steps = [

@@ -8,10 +8,28 @@
  *  - Eye tracking toward cursor for "presence"
  *  - Color-coded glow ring
  */
-import { Suspense, useRef, useEffect, useMemo, useState } from 'react'
+import { Suspense, useRef, useEffect, useMemo, Component } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useGLTF, useAnimations, Environment, Bounds, Center, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
+
+class AvatarErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false } }
+  static getDerivedStateFromError() { return { hasError: true } }
+  componentDidCatch(err) { console.warn('Maya3D crashed:', err) }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          width: '100%', height: this.props.size || 300,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 64,
+        }}>🤖</div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const STATE_GLOWS = {
   idle:        '#2DD4BF',
@@ -171,7 +189,35 @@ function GlowRing({ state }) {
   )
 }
 
-export default function MayaAvatar({ state = 'idle', size = 320 }) {
+function CanvasInner({ state, mouseRef, glow }) {
+  return (
+    <Canvas
+      camera={{ position: [0, 0.1, 5.4], fov: 30 }}
+      dpr={1}
+      gl={{ antialias: false, alpha: true, powerPreference: 'low-power' }}
+      onCreated={({ gl }) => {
+        const canvas = gl.domElement
+        canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault() })
+      }}
+    >
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[3, 4, 5]} intensity={1.3} />
+      <directionalLight position={[-3, 2, -2]} intensity={0.5} color={glow} />
+      <Suspense fallback={null}>
+        <Bounds fit clip observe margin={1.05}>
+          <Center>
+            <Model state={state} mouseRef={mouseRef} />
+          </Center>
+        </Bounds>
+        <ContactShadows position={[0, -1.2, 0]} opacity={0.4} blur={2.5} scale={5} />
+        <GlowRing state={state} />
+      </Suspense>
+      <MouseTracker mouseRef={mouseRef} />
+    </Canvas>
+  )
+}
+
+export default function MayaAvatar({ state = 'idle', size = 300 }) {
   const mouseRef = useRef({ x: 0, y: 0 })
   const glow = STATE_GLOWS[state] || STATE_GLOWS.idle
 
@@ -187,27 +233,9 @@ export default function MayaAvatar({ state = 'idle', size = 320 }) {
         transition: 'filter 400ms ease',
       }}
     >
-      <Canvas
-        camera={{ position: [0, 0.1, 5.4], fov: 30 }}
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false }}
-      >
-        <color attach="background" args={['transparent']} />
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[3, 4, 5]} intensity={1.4} />
-        <directionalLight position={[-3, 2, -2]} intensity={0.6} color={glow} />
-        <Suspense fallback={null}>
-          <Bounds fit clip observe margin={1.05}>
-            <Center disableY={false}>
-              <Model state={state} mouseRef={mouseRef} />
-            </Center>
-          </Bounds>
-          <Environment preset="studio" />
-          <ContactShadows position={[0, -1.2, 0]} opacity={0.45} blur={2.6} scale={5} />
-          <GlowRing state={state} />
-        </Suspense>
-        <MouseTracker mouseRef={mouseRef} />
-      </Canvas>
+      <AvatarErrorBoundary size={size}>
+        <CanvasInner state={state} mouseRef={mouseRef} glow={glow} />
+      </AvatarErrorBoundary>
     </div>
   )
 }
