@@ -151,6 +151,7 @@ export default function MayaDashboard() {
               <div style={{ fontSize: 22 }}>{gam.level?.icon}</div>
               <div style={{ fontSize: 9, color: C.muted }}>{gam.level?.title}</div>
             </div>
+            <IconBtn onClick={() => navigate('/lesson')} title="Lesson mode">🎙</IconBtn>
             <IconBtn onClick={() => navigate('/profile')} title="Profile">👤</IconBtn>
             <IconBtn onClick={() => navigate('/parent')} title="Parent report">📊</IconBtn>
             <IconBtn onClick={() => navigate('/schedule')} title="Schedule">⚙</IconBtn>
