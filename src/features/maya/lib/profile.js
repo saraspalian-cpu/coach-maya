@@ -24,6 +24,9 @@ const DEFAULT_PROFILE = {
   // Voice & avatar
   voiceEnabled: true,
   voiceAutoSpeak: true,
+  systemVoice: null,           // chosen system voice name (null = auto-pick best)
+  elevenLabsApiKey: '',        // ElevenLabs API key for premium TTS
+  elevenLabsVoiceId: '',       // chosen ElevenLabs voice id
   avatarStyle: 'pixar',
   themeAccent: '#2DD4BF',
   // Personality model (learner-managed)

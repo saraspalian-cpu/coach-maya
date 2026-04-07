@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadProfile, saveProfile } from './lib/profile'
+import { listAllVoices, waitForVoices, speak, cancelSpeech } from './lib/voice'
 
 const C = {
   bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
@@ -13,6 +14,27 @@ export default function MayaProfile() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(loadProfile())
   const [saved, setSaved] = useState(false)
+  const [systemVoices, setSystemVoices] = useState([])
+
+  useEffect(() => {
+    waitForVoices().then(() => setSystemVoices(listAllVoices()))
+  }, [])
+
+  const previewVoice = (voiceName) => {
+    // Save first so the picker uses it
+    const test = { ...profile, systemVoice: voiceName, elevenLabsApiKey: '' }
+    saveProfile(test)
+    cancelSpeech()
+    speak("Hey Vasco, this is Maya. Locked in and ready when you are.")
+    // Restore
+    setTimeout(() => saveProfile(profile), 100)
+  }
+
+  const previewElevenLabs = () => {
+    saveProfile(profile)
+    cancelSpeech()
+    speak("Hey Vasco, this is Maya speaking through ElevenLabs. Sounds way better, right?")
+  }
 
   const update = (patch) => setProfile((p) => ({ ...p, ...patch }))
   const save = () => {
@@ -78,9 +100,65 @@ export default function MayaProfile() {
           <Row label="Maya speaks aloud">
             <Toggle on={profile.voiceAutoSpeak} onChange={v => update({ voiceAutoSpeak: v })} />
           </Row>
-          <Row label="Voice enabled">
-            <Toggle on={profile.voiceEnabled} onChange={v => update({ voiceEnabled: v })} />
+
+          <Row label="System voice (free)">
+            <select
+              value={profile.systemVoice || ''}
+              onChange={(e) => update({ systemVoice: e.target.value || null })}
+              style={{ ...input, fontSize: 12 }}
+            >
+              <option value="">Auto-pick best</option>
+              {systemVoices.map(v => (
+                <option key={v.name} value={v.name}>
+                  {v.name} ({v.lang})
+                </option>
+              ))}
+            </select>
+            {profile.systemVoice && (
+              <button
+                onClick={() => previewVoice(profile.systemVoice)}
+                style={{
+                  marginTop: 6, padding: '6px 12px', background: 'transparent',
+                  border: `1px solid ${C.teal}`, borderRadius: 8,
+                  color: C.teal, fontSize: 11, fontFamily: C.mono, cursor: 'pointer',
+                }}
+              >▶ Preview</button>
+            )}
           </Row>
+        </Section>
+
+        <Section title="ElevenLabs (premium)">
+          <p style={{ fontSize: 10, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
+            For Pixar-tier voice quality. Get a key from elevenlabs.io.
+            Pick any voice from their library and paste its Voice ID.
+          </p>
+          <Row label="API Key">
+            <input
+              style={input}
+              type="password"
+              value={profile.elevenLabsApiKey || ''}
+              onChange={e => update({ elevenLabsApiKey: e.target.value })}
+              placeholder="sk_..."
+            />
+          </Row>
+          <Row label="Voice ID">
+            <input
+              style={input}
+              value={profile.elevenLabsVoiceId || ''}
+              onChange={e => update({ elevenLabsVoiceId: e.target.value })}
+              placeholder="EXAVITQu4vr4xnSDxMaL (Sarah default)"
+            />
+          </Row>
+          {profile.elevenLabsApiKey && (
+            <button
+              onClick={previewElevenLabs}
+              style={{
+                marginTop: 6, padding: '8px 14px', background: C.teal,
+                border: 'none', borderRadius: 8,
+                color: C.bg, fontSize: 11, fontFamily: C.mono, fontWeight: 700, cursor: 'pointer',
+              }}
+            >▶ Preview ElevenLabs voice</button>
+          )}
         </Section>
 
         {profile.worksOn?.length > 0 && (
