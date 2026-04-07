@@ -1,37 +1,24 @@
 import { Suspense, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useGLTF, Environment, ContactShadows } from '@react-three/drei'
+import { useGLTF, Environment, Bounds, Center } from '@react-three/drei'
 
-function Model({ state }) {
+function Model() {
   const ref = useRef()
   const { scene } = useGLTF('/maya.glb')
-  useFrame((_, delta) => {
-    if (!ref.current) return
-    const t = performance.now() / 1000
-    if (state === 'idle') ref.current.position.y = -1.5 + Math.sin(t * 1.5) * 0.03
-    else if (state === 'celebrating') ref.current.position.y = -1.5 + Math.abs(Math.sin(t * 5)) * 0.15
-    else if (state === 'urgent') ref.current.rotation.z = Math.sin(t * 8) * 0.05
-    else if (state === 'sleeping') ref.current.position.y = -1.5 + Math.sin(t * 0.8) * 0.02
-    else ref.current.position.y = -1.5
-    ref.current.rotation.y += delta * 0.15
-  })
-  return <primitive ref={ref} object={scene} scale={1} position={[0, -2, 0]} />
+  useFrame((_, d) => { if (ref.current) ref.current.rotation.y += d * 0.3 })
+  return <primitive ref={ref} object={scene} />
 }
-
 useGLTF.preload('/maya.glb')
 
-export default function MayaAvatar({ state = 'idle', size = 900 }) {
-  const glow = state === 'urgent' ? '#EF4444' : state === 'celebrating' ? '#FFD700' : '#2DD4BF'
+export default function MayaAvatar({ size = 500 }) {
   return (
-    <div style={{ width: size, height: size, margin: '0 auto', filter: 'drop-shadow(0 0 20px ' + glow + '55)' }}>
-      <Canvas camera={{ position: [0, 0, 7], fov: 30 }}>
-        <ambientLight intensity={0.6} />
+    <div style={{ width: size, height: size, margin: '0 auto' }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 35 }}>
+        <ambientLight intensity={0.8} />
         <directionalLight position={[3, 5, 5]} intensity={1.2} />
-        <directionalLight position={[-3, 2, -2]} intensity={0.4} color={glow} />
         <Suspense fallback={null}>
-          <Model state={state} />
+          <Bounds fit clip observe margin={1}><Center><Model /></Center></Bounds>
           <Environment preset="studio" />
-          <ContactShadows position={[0, -2, 0]} opacity={0.4} scale={5} blur={2.5} />
         </Suspense>
       </Canvas>
     </div>
