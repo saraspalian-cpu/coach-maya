@@ -20,7 +20,7 @@ function Model({ state }) {
 
 useGLTF.preload('/maya.glb')
 
-export default function MayaAvatar({ state = 'idle', size = 220 }) {
+export default function MayaAvatar({ state = 'idle', size = 900 }) {
   const glow = state === 'urgent' ? '#EF4444' : state === 'celebrating' ? '#FFD700' : '#2DD4BF'
   return (
     <div style={{ width: size, height: size, margin: '0 auto', filter: 'drop-shadow(0 0 20px ' + glow + '55)' }}>

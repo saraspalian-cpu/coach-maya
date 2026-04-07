@@ -73,7 +73,7 @@ export default function MayaDashboard() {
         padding: '8px 0 4px',
         borderBottom: `1px solid ${C.border}`,
       }}>
-        <MayaAvatar state={avatarState} size={320} />
+        <MayaAvatar state={avatarState} size={900} />
         <div style={{ textAlign: 'center', marginTop: 4 }}>
           <div style={{
             fontFamily: C.display,
