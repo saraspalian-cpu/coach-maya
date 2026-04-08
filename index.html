@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#060c18" />
@@ -11,9 +12,69 @@
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
     <title>Coach Maya</title>
+    <style>
+      html, body { background: #060c18; margin: 0; }
+      #boot {
+        position: fixed; inset: 0;
+        background: radial-gradient(ellipse at center, #121e30 0%, #060c18 70%);
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        font-family: 'Bebas Neue', sans-serif;
+        color: #2DD4BF;
+        z-index: 9999;
+        transition: opacity 400ms ease;
+      }
+      #boot.gone { opacity: 0; pointer-events: none; }
+      #boot .logo {
+        font-size: 56px; letter-spacing: 4px;
+        text-shadow: 0 0 30px rgba(45, 212, 191, 0.4);
+      }
+      #boot .sub {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 11px; color: #6b7f99;
+        margin-top: 6px; letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      #boot .pulse {
+        margin-top: 32px;
+        width: 60px; height: 4px;
+        background: #1a2a3e; border-radius: 2px;
+        overflow: hidden;
+      }
+      #boot .pulse::after {
+        content: ''; display: block;
+        width: 30%; height: 100%;
+        background: linear-gradient(90deg, transparent, #2DD4BF, transparent);
+        animation: bootPulse 1.4s infinite ease-in-out;
+      }
+      @keyframes bootPulse {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(300%); }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot">
+      <div class="logo">COACH MAYA</div>
+      <div class="sub">waking up...</div>
+      <div class="pulse"></div>
+    </div>
     <div id="root"></div>
+    <script>
+      // Hide boot screen once React mounts
+      const obs = new MutationObserver(() => {
+        const root = document.getElementById('root')
+        if (root && root.children.length > 0) {
+          const boot = document.getElementById('boot')
+          if (boot) {
+            boot.classList.add('gone')
+            setTimeout(() => boot.remove(), 500)
+          }
+          obs.disconnect()
+        }
+      })
+      obs.observe(document.getElementById('root'), { childList: true })
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

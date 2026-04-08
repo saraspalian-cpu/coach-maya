@@ -5,6 +5,7 @@ import CommandBar from './features/maya/components/CommandBar'
 import AchievementModal from './features/maya/components/AchievementModal'
 import LiveLessonBanner from './features/maya/components/LiveLessonBanner'
 import BottomNav from './features/maya/components/BottomNav'
+import ErrorBoundary from './features/maya/components/ErrorBoundary'
 import { loadProfile } from './features/maya/lib/profile'
 
 // Eager: dashboard (needed immediately)
@@ -95,10 +96,12 @@ function GatedRoutes() {
 
 export default function App() {
   return (
-    <MayaProvider>
-      <BrowserRouter>
-        <GatedRoutes />
-      </BrowserRouter>
-    </MayaProvider>
+    <ErrorBoundary>
+      <MayaProvider>
+        <BrowserRouter>
+          <GatedRoutes />
+        </BrowserRouter>
+      </MayaProvider>
+    </ErrorBoundary>
   )
 }
