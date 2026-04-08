@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 
@@ -15,6 +16,52 @@ export default function MayaParent() {
   const navigate = useNavigate()
   const { getDailyReport, profile } = useMaya()
   const report = getDailyReport()
+  const [copied, setCopied] = useState(false)
+
+  const reportText = () => {
+    const lines = [
+      `Coach Maya — ${profile?.name || 'Vasco'} · ${report.date}`,
+      ``,
+      `Grade: ${report.grade} (${report.gradeLabel})`,
+      `XP: ${report.xpEarned} · Level: ${report.level}`,
+      `Tasks: ${report.tasksCompleted} done / ${report.tasksSkipped} skipped`,
+      `Combo: ${report.combo}×`,
+      report.mood && `Mood: ${report.mood}`,
+      ``,
+      `MVP Moment`,
+      `  ${report.mvpMoment}`,
+      report.concern && `\nOne concern`,
+      report.concern && `  ${report.concern}`,
+      ``,
+      `Maya's recommendation`,
+      `  ${report.recommendation}`,
+      report.reflection && `\nReflection`,
+      report.reflection && `  "${report.reflection}"`,
+    ].filter(Boolean)
+    return lines.join('\n')
+  }
+
+  const copyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(reportText())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {}
+  }
+
+  const shareReport = async () => {
+    const text = reportText()
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Coach Maya — ${profile?.name || 'Vasco'} ${report.date}`,
+          text,
+        })
+      } catch {}
+    } else {
+      copyReport()
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.mono, paddingBottom: 80 }}>
@@ -32,6 +79,20 @@ export default function MayaParent() {
             PARENT REPORT
           </div>
           <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{report.date} · {profile?.name}</div>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <button onClick={copyReport} style={{
+            padding: '6px 10px', background: 'transparent',
+            border: `1px solid ${C.border}`, borderRadius: 8,
+            color: copied ? C.green : C.muted, fontSize: 10,
+            fontFamily: C.mono, cursor: 'pointer',
+          }}>{copied ? '✓ Copied' : 'Copy'}</button>
+          <button onClick={shareReport} style={{
+            padding: '6px 10px', background: C.teal,
+            border: 'none', borderRadius: 8,
+            color: C.bg, fontSize: 10, fontWeight: 700,
+            fontFamily: C.mono, cursor: 'pointer',
+          }}>Share</button>
         </div>
       </div>
 

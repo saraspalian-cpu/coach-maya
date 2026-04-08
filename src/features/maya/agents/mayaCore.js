@@ -114,9 +114,46 @@ function buildPrompt(type, context) {
   }
 }
 
+// ─── Adaptive tone line based on live context ───
+function buildAdaptiveTone(context, mood, combo, streak) {
+  const hour = new Date().getHours()
+  const parts = []
+
+  // Time of day
+  if (hour >= 5 && hour < 11) parts.push('Morning energy — wake-up mode, no heavy stuff yet')
+  else if (hour >= 11 && hour < 14) parts.push('Midday — steady focus, stay sharp')
+  else if (hour >= 14 && hour < 18) parts.push('Afternoon — push through the dip')
+  else if (hour >= 18 && hour < 22) parts.push('Evening — wind-down tone, warmer')
+  else parts.push('Late hours — gentle, short, no pressure')
+
+  // Mood override
+  if (mood === 'Frustrated') parts.push('He is frustrated — soften up, acknowledge first, humor carefully')
+  if (mood === 'Tired') parts.push('He is tired — keep it light and short, no heavy pushes')
+  if (mood === 'Meh') parts.push('He is flat — bring energy but do not fake-hype')
+  if (mood === 'Fired up') parts.push('He is fired up — match the energy, drop a challenge')
+  if (mood === 'Good') parts.push('He is good — normal sarcastic-encouraging mode')
+
+  // Combo state
+  if (combo >= 5) parts.push(`He is on a ${combo}× combo — reference it, feed the momentum`)
+  else if (combo >= 3) parts.push(`${combo}× combo going — notice it`)
+
+  // Streak
+  if (streak >= 7) parts.push(`${streak}-day streak — this is identity now, frame it that way`)
+
+  return parts.length ? `ADAPTIVE CONTEXT (tune your tone): ${parts.join('. ')}.` : ''
+}
+
 // ─── Generate Maya Message (calls Claude API) ───
 async function generateMessage(type, context, personalityContext = '', history = []) {
-  const systemPrompt = MAYA_SYSTEM_PROMPT.replace('{personality_context}', personalityContext)
+  const mood = context.mood
+  const combo = context.combo || 0
+  const streak = context.streak || 0
+  const adaptive = buildAdaptiveTone(context, mood, combo, streak)
+
+  const systemPrompt = MAYA_SYSTEM_PROMPT.replace(
+    '{personality_context}',
+    `${personalityContext}\n\n${adaptive}`
+  )
   const userPrompt = buildPrompt(type, context)
 
   try {

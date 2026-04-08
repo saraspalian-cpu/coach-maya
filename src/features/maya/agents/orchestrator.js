@@ -63,6 +63,8 @@ async function handleTaskComplete(task, state, personalityContext) {
     combo: result.state.gamification.combo,
     comboLabel: result.state.gamification.comboLabel,
     dayGrade: result.state.gamification.dayGrade.grade,
+    mood: state.todayMood,
+    streak: state.profile?.currentStreak,
   }, personalityContext)
   result.messages.push(mayaMsg)
 

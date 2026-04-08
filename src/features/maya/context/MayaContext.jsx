@@ -7,6 +7,7 @@ import { generateDailyReport } from '../agents/parentIntelligence'
 import { loadProfile, saveProfile, buildPersonalityContext } from '../lib/profile'
 import { speak, cancelSpeech, listen, isSTTSupported } from '../lib/voice'
 import { notify } from '../lib/notifications'
+import { startWatchdog, stopWatchdog } from '../lib/scheduler'
 import {
   handleTaskComplete,
   handleTaskSkip,
@@ -301,6 +302,22 @@ function MayaProvider({ children }) {
       spotChecks: state.spotChecks,
     })
   }, [state])
+
+  // Start notification watchdog (1-min cadence, fires desktop nudges)
+  useEffect(() => {
+    const getState = () => ({
+      tasks: state.tasks,
+      gamification: state.gamification,
+      lastActivityTime: state.lastActivityTime,
+      profile: state.profile,
+    })
+    if (state.profile?.notificationsEnabled) {
+      startWatchdog(getState)
+    } else {
+      stopWatchdog()
+    }
+    return () => stopWatchdog()
+  }, [state.profile?.notificationsEnabled, state.tasks, state.gamification, state.lastActivityTime, state.profile])
 
   // Schedule Tick (every 5 min)
   useEffect(() => {
