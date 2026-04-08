@@ -5,6 +5,7 @@ import { LEVELS, ACHIEVEMENTS } from './agents/gamification'
 import { loadHistory as loadLessonHistory } from './agents/lessonAnalyst'
 import { getMemoryStats } from './agents/memory'
 import { weeklyInsights } from './agents/insights'
+import { getSuggestion } from './agents/suggestions'
 
 // Lazy load 3D avatar (Three.js is ~800KB)
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
@@ -184,14 +185,7 @@ export default function MayaDashboard({ onOpenSearch }) {
               <div style={{ fontSize: 9, color: C.muted }}>{gam.level?.title}</div>
             </div>
             <IconBtn onClick={() => onOpenSearch?.()} title="Search (⌘K)">🔍</IconBtn>
-            <IconBtn onClick={() => navigate('/lessons')} title="Lesson vault">🎙</IconBtn>
-            <IconBtn onClick={() => navigate('/memory')} title="Memory bank">🧠</IconBtn>
-            <IconBtn onClick={() => navigate('/goals')} title="Big picture">🎯</IconBtn>
-            <IconBtn onClick={() => navigate('/shop')} title="XP shop">🛒</IconBtn>
             <IconBtn onClick={() => navigate('/profile')} title="Profile">👤</IconBtn>
-            <IconBtn onClick={() => navigate('/parent')} title="Parent report">📊</IconBtn>
-            <IconBtn onClick={() => navigate('/schedule')} title="Schedule">⚙</IconBtn>
-            <IconBtn onClick={() => navigate('/help')} title="Tips">?</IconBtn>
           </div>
         </div>
 
@@ -222,6 +216,12 @@ export default function MayaDashboard({ onOpenSearch }) {
           )}
         </div>
       </div>
+
+      {/* ─── Smart suggestion ─── */}
+      <SuggestionCard navigate={navigate} maya={maya} />
+
+      {/* ─── Quick nav scroll row ─── */}
+      <NavRow navigate={navigate} />
 
       {/* ─── Lesson CTA — Maya's signature feature ─── */}
       <LessonCTA navigate={navigate} />
@@ -558,6 +558,76 @@ function MayaMessageBubble({ message }) {
         Maya says
       </div>
       <div style={{ fontSize: 13, lineHeight: 1.5 }}>{message.text}</div>
+    </div>
+  )
+}
+
+function NavRow({ navigate }) {
+  const items = [
+    { icon: '🎙', label: 'Vault', to: '/lessons' },
+    { icon: '🧠', label: 'Memory', to: '/memory' },
+    { icon: '🎯', label: 'Goals', to: '/goals' },
+    { icon: '📈', label: 'Insights', to: '/insights' },
+    { icon: '📓', label: 'Journal', to: '/journal' },
+    { icon: '🛒', label: 'Shop', to: '/shop' },
+    { icon: '📊', label: 'Parent', to: '/parent' },
+    { icon: '⚙', label: 'Schedule', to: '/schedule' },
+    { icon: '?', label: 'Help', to: '/help' },
+  ]
+  return (
+    <div style={{
+      display: 'flex', gap: 8, padding: '10px 16px',
+      overflowX: 'auto', borderBottom: `1px solid ${C.border}`,
+      background: C.surface,
+    }}>
+      {items.map(it => (
+        <button
+          key={it.to}
+          onClick={() => navigate(it.to)}
+          style={{
+            flex: '0 0 auto', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', gap: 4,
+            padding: '8px 12px', minWidth: 60,
+            background: C.surfaceLight, border: `1px solid ${C.border}`,
+            borderRadius: 10, color: C.text, fontFamily: C.mono, cursor: 'pointer',
+          }}
+        >
+          <div style={{ fontSize: 18 }}>{it.icon}</div>
+          <div style={{ fontSize: 9, color: C.muted }}>{it.label}</div>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function SuggestionCard({ navigate, maya }) {
+  const s = useMemo(() => getSuggestion({
+    tasks: maya.tasks,
+    gamification: maya.gamification,
+    todayMood: maya.todayMood,
+    profile: maya.profile,
+  }), [maya.tasks, maya.gamification, maya.todayMood, maya.profile])
+  if (!s) return null
+  return (
+    <div
+      onClick={() => navigate(s.action)}
+      style={{
+        padding: '12px 16px',
+        background: `linear-gradient(135deg, ${C.purple}11, ${C.surface})`,
+        borderBottom: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'center', gap: 12,
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ fontSize: 22 }}>{s.icon}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 9, color: C.purple, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 2 }}>
+          Maya suggests
+        </div>
+        <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{s.title}</div>
+        <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{s.sub}</div>
+      </div>
+      <div style={{ fontSize: 14, color: C.muted }}>→</div>
     </div>
   )
 }

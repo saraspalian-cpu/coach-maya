@@ -26,6 +26,10 @@ const NAV_ACTIONS = [
   { id: 'schedule',    label: 'Edit schedule',     sub: 'Tasks',            icon: '⚙', go: '/schedule' },
   { id: 'morning',     label: 'Morning ritual',    sub: 'Set the day',      icon: '☀️', go: '/ritual?mode=morning' },
   { id: 'evening',     label: 'Evening wrap',      sub: 'Reflect',          icon: '🌙', go: '/ritual?mode=evening' },
+  { id: 'insights',    label: 'Weekly insights',   sub: 'Trends + analytics',icon: '📈', go: '/insights' },
+  { id: 'journal',     label: 'Journal',           sub: 'Voice or text',    icon: '📓', go: '/journal' },
+  { id: 'shop',        label: 'XP rewards shop',   sub: 'Spend XP',         icon: '🛒', go: '/shop' },
+  { id: 'help',        label: 'Tips + iOS install',sub: 'Help',             icon: '?',  go: '/help' },
 ]
 
 export default function CommandBar({ open, onClose }) {
