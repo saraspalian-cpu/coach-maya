@@ -27,6 +27,8 @@ const DEFAULT_PROFILE = {
   systemVoice: null,           // chosen system voice name (null = auto-pick best)
   elevenLabsApiKey: '',        // ElevenLabs API key for premium TTS
   elevenLabsVoiceId: '',       // chosen ElevenLabs voice id
+  anthropicApiKey: '',         // Claude API key — unlocks real Maya intelligence
+  notificationsEnabled: false, // Web Notifications opt-in
   avatarStyle: 'pixar',
   themeAccent: '#2DD4BF',
   // Personality model (learner-managed)

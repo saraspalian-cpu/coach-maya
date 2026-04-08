@@ -130,9 +130,16 @@ async function generateMessage(type, context, personalityContext = '') {
   }
 }
 
-// ─── Claude API Call (to be configured with actual API key) ───
+// ─── Claude API Call ───
 async function callClaudeAPI(systemPrompt, userPrompt) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
+  // Read key from profile (preferred) or env var (fallback)
+  let apiKey = ''
+  try {
+    const profile = JSON.parse(localStorage.getItem('maya_profile') || '{}')
+    apiKey = profile.anthropicApiKey || import.meta.env.VITE_ANTHROPIC_API_KEY || ''
+  } catch {
+    apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
+  }
   if (!apiKey) throw new Error('No API key configured')
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -144,8 +151,8 @@ async function callClaudeAPI(systemPrompt, userPrompt) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 150,
+      model: 'claude-sonnet-4-5',
+      max_tokens: 200,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),

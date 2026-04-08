@@ -6,6 +6,7 @@ import { recordEvent } from '../agents/personalityLearner'
 import { generateDailyReport } from '../agents/parentIntelligence'
 import { loadProfile, saveProfile, buildPersonalityContext } from '../lib/profile'
 import { speak, cancelSpeech, listen, isSTTSupported } from '../lib/voice'
+import { notify } from '../lib/notifications'
 import {
   handleTaskComplete,
   handleTaskSkip,
@@ -112,19 +113,27 @@ function MayaProvider({ children }) {
     saveToStorage(STORAGE_KEY, rest)
   }, [state])
 
-  // Auto-speak Maya messages
+  // Auto-speak Maya messages + send notification if backgrounded
   useEffect(() => {
-    if (!state.profile?.voiceAutoSpeak) return
     const last = state.messages[state.messages.length - 1]
     if (!last || last.type === 'user') return
     const id = last.timestamp + (last.text?.slice(0, 20) || '')
     if (lastSpokenIdRef.current === id) return
     lastSpokenIdRef.current = id
-    dispatch({ type: 'SET_VOICE_STATE', payload: 'speaking' })
-    speak(last.text, {
-      onEnd: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
-      onError: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
-    })
+
+    if (state.profile?.voiceAutoSpeak) {
+      dispatch({ type: 'SET_VOICE_STATE', payload: 'speaking' })
+      speak(last.text, {
+        onEnd: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
+        onError: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
+      })
+    }
+
+    // If page is hidden + notifications enabled, nudge
+    if (state.profile?.notificationsEnabled && document.hidden) {
+      const isUrgent = ['combo_warn', 'overdue', 'achievement'].includes(last.type)
+      notify('Coach Maya', last.text, { tag: last.type, requireInteraction: isUrgent })
+    }
   }, [state.messages, state.profile])
 
   // ─── Actions ───

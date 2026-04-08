@@ -27,7 +27,7 @@ const C = {
 
 const gradeColors = { S: C.gold, A: C.green, B: C.blue, C: C.amber, F: C.red, '-': C.dim }
 
-export default function MayaDashboard() {
+export default function MayaDashboard({ onOpenSearch }) {
   const maya = useMaya()
   const [chatInput, setChatInput] = useState('')
   const [spotCheckInput, setSpotCheckInput] = useState('')
@@ -153,6 +153,7 @@ export default function MayaDashboard() {
               <div style={{ fontSize: 22 }}>{gam.level?.icon}</div>
               <div style={{ fontSize: 9, color: C.muted }}>{gam.level?.title}</div>
             </div>
+            <IconBtn onClick={() => onOpenSearch?.()} title="Search (⌘K)">🔍</IconBtn>
             <IconBtn onClick={() => navigate('/lessons')} title="Lesson vault">🎙</IconBtn>
             <IconBtn onClick={() => navigate('/memory')} title="Memory bank">🧠</IconBtn>
             <IconBtn onClick={() => navigate('/goals')} title="Big picture">🎯</IconBtn>

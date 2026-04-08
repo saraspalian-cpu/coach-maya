@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { MayaProvider } from './features/maya/context/MayaContext'
+import CommandBar from './features/maya/components/CommandBar'
 import MayaDashboard from './features/maya/MayaDashboard'
 import MayaSchedule from './features/maya/MayaSchedule'
 import MayaProfile from './features/maya/MayaProfile'
@@ -15,20 +17,37 @@ import { loadProfile } from './features/maya/lib/profile'
 function GatedRoutes() {
   const profile = loadProfile()
   const needsOnboarding = !profile.setupComplete
+  const [cmdOpen, setCmdOpen] = useState(false)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setCmdOpen(o => !o)
+      }
+      if (e.key === 'Escape') setCmdOpen(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   return (
-    <Routes>
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/" element={needsOnboarding ? <Navigate to="/onboarding" replace /> : <MayaDashboard />} />
-      <Route path="/schedule" element={<MayaSchedule />} />
-      <Route path="/profile" element={<MayaProfile />} />
-      <Route path="/parent" element={<MayaParent />} />
-      <Route path="/lesson" element={<MayaLesson />} />
-      <Route path="/lessons" element={<MayaLessons />} />
-      <Route path="/memory" element={<MayaMemory />} />
-      <Route path="/ritual" element={<MayaRitual />} />
-      <Route path="/goals" element={<MayaGoals />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/" element={needsOnboarding ? <Navigate to="/onboarding" replace /> : <MayaDashboard onOpenSearch={() => setCmdOpen(true)} />} />
+        <Route path="/schedule" element={<MayaSchedule />} />
+        <Route path="/profile" element={<MayaProfile />} />
+        <Route path="/parent" element={<MayaParent />} />
+        <Route path="/lesson" element={<MayaLesson />} />
+        <Route path="/lessons" element={<MayaLessons />} />
+        <Route path="/memory" element={<MayaMemory />} />
+        <Route path="/ritual" element={<MayaRitual />} />
+        <Route path="/goals" element={<MayaGoals />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <CommandBar open={cmdOpen} onClose={() => setCmdOpen(false)} />
+    </>
   )
 }
 

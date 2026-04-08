@@ -162,6 +162,40 @@ export default function MayaProfile() {
           </Row>
         </Section>
 
+        <Section title="Maya's Brain (Claude API)">
+          <p style={{ fontSize: 10, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
+            Without a key Maya uses fallback templates. With a Claude API key she actually thinks. Get one at console.anthropic.com.
+          </p>
+          <Row label="Anthropic API Key">
+            <input
+              style={input}
+              type="password"
+              value={profile.anthropicApiKey || ''}
+              onChange={e => update({ anthropicApiKey: e.target.value })}
+              placeholder="sk-ant-..."
+            />
+          </Row>
+        </Section>
+
+        <Section title="Notifications">
+          <Row label="Browser nudges">
+            <Toggle
+              on={profile.notificationsEnabled}
+              onChange={async (v) => {
+                if (v && 'Notification' in window) {
+                  const perm = await Notification.requestPermission()
+                  update({ notificationsEnabled: perm === 'granted' })
+                } else {
+                  update({ notificationsEnabled: false })
+                }
+              }}
+            />
+          </Row>
+          <p style={{ fontSize: 10, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>
+            Maya will send a desktop nudge when your combo is about to expire or a task is overdue.
+          </p>
+        </Section>
+
         <Section title="ElevenLabs (premium — sounds human)">
           <p style={{ fontSize: 10, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
             System voices sound robotic. ElevenLabs sounds real. Get a free API key from elevenlabs.io (10k chars/month free), paste it below, then tap a preset.
