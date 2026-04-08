@@ -166,6 +166,66 @@ function extractKeyPoints(transcript, max = 3) {
 
 // ─── Quiz generation ───────────────────────────────────
 
+// Subject-specific quiz styles
+const SUBJECT_QUIZ_STYLES = {
+  Maths: (concepts, keyPoints, subject) => [
+    concepts[0] && {
+      q: `What problem-solving method did you learn for "${concepts[0].phrase}"? Walk me through the steps.`,
+      type: 'open',
+    },
+    concepts[1] && {
+      q: `Give me an example calculation using "${concepts[1].phrase}".`,
+      type: 'open',
+    },
+    {
+      q: `Where would "${concepts[0]?.phrase || 'this'}" actually show up in real life?`,
+      type: 'open',
+    },
+  ].filter(Boolean),
+  Science: (concepts, keyPoints, subject) => [
+    concepts[0] && {
+      q: `What causes "${concepts[0].phrase}" to happen?`,
+      type: 'open',
+    },
+    concepts[1] && {
+      q: `What's the difference between "${concepts[0].phrase}" and "${concepts[1].phrase}"?`,
+      type: 'open',
+    },
+    {
+      q: `If you removed "${concepts[0]?.phrase || 'this'}" from the equation, what would change?`,
+      type: 'open',
+    },
+  ].filter(Boolean),
+  English: (concepts, keyPoints, subject) => [
+    keyPoints[0] && {
+      q: `Summarize this in one sentence: "${keyPoints[0].slice(0, 120)}..."`,
+      type: 'open',
+    },
+    concepts[0] && {
+      q: `Use "${concepts[0].phrase}" in a sentence of your own.`,
+      type: 'open',
+    },
+    {
+      q: `What's the author's point of view here?`,
+      type: 'open',
+    },
+  ].filter(Boolean),
+  History: (concepts, keyPoints, subject) => [
+    concepts[0] && {
+      q: `Why was "${concepts[0].phrase}" important?`,
+      type: 'open',
+    },
+    concepts[1] && {
+      q: `What changed because of "${concepts[1].phrase}"?`,
+      type: 'open',
+    },
+    {
+      q: `If this hadn't happened, what would be different today?`,
+      type: 'open',
+    },
+  ].filter(Boolean),
+}
+
 function generateQuiz(transcript, subject = 'Lesson') {
   const concepts = extractConcepts(transcript)
   const keyPoints = extractKeyPoints(transcript, 3)
@@ -175,8 +235,19 @@ function generateQuiz(transcript, subject = 'Lesson') {
     ]
   }
 
-  const questions = []
+  // Use subject-specific style if available
+  const styler = SUBJECT_QUIZ_STYLES[subject]
+  if (styler) {
+    const questions = styler(concepts, keyPoints, subject)
+    questions.push({
+      q: `One thing you'll remember from this ${subject} lesson tomorrow morning?`,
+      type: 'open',
+    })
+    return questions.slice(0, 4)
+  }
 
+  // Fallback generic quiz
+  const questions = []
   if (concepts[0]) {
     questions.push({
       q: `In your own words, what does "${concepts[0].phrase}" mean?`,
@@ -184,26 +255,22 @@ function generateQuiz(transcript, subject = 'Lesson') {
       type: 'open',
     })
   }
-
   if (concepts.length >= 2) {
     questions.push({
       q: `How does "${concepts[0].phrase}" connect to "${concepts[1].phrase}"?`,
       type: 'open',
     })
   }
-
   if (keyPoints[0]) {
     questions.push({
       q: `Your teacher said something like: "${keyPoints[0].slice(0, 120)}${keyPoints[0].length > 120 ? '...' : ''}" — why does that matter?`,
       type: 'open',
     })
   }
-
   questions.push({
     q: `One thing you'll remember from this ${subject} lesson tomorrow morning?`,
     type: 'open',
   })
-
   return questions.slice(0, 4)
 }
 
