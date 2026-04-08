@@ -200,6 +200,85 @@ async function callClaudeAPI(systemPrompt, userPrompt, history = []) {
   return data.content[0].text
 }
 
+// ─── Smart fallback chat (keyword-based, no API needed) ───
+function smartFreeChat(userMessage) {
+  const m = userMessage.toLowerCase().trim()
+  if (!m) return "I'm here. Talk to me."
+
+  // Greetings
+  if (/^(hi|hello|hey|yo|sup|hola|whatsup|what's up)\b/.test(m)) {
+    return pick([
+      'Hey. What are we doing today?',
+      'There you are. What\'s on your mind?',
+      'Sup. Need something or just saying hi?',
+    ])
+  }
+
+  // How are you
+  if (/how (are|r) (you|u)|how('?s| is) it going/.test(m)) {
+    return "I'm a machine, I'm always great. More importantly — how's *your* head right now?"
+  }
+
+  // Tired / can't / don't want
+  if (/\b(tired|exhausted|can'?t|don'?t want|hate|sucks|bored|boring)\b/.test(m)) {
+    return pick([
+      "Fair. Rough is real. What's the smallest thing you could do right now anyway?",
+      "Heard. Pick the easiest task on the list, do that, then we talk.",
+      "That sucks. But also — combo's still alive. Just a thought.",
+    ])
+  }
+
+  // Help / stuck / don't get / confused
+  if (/\b(help|stuck|don'?t (get|understand)|confused|how do i|what is)\b/.test(m)) {
+    return "Walk me through what you're trying to do. Where exactly does it stop making sense?"
+  }
+
+  // Done / finished
+  if (/\b(done|finished|completed|nailed it|crushed)\b/.test(m)) {
+    return pick([
+      "That's what I like to see. What's next on the slate?",
+      "Boom. Tap the task circle so it counts. Then keep moving.",
+      "Locked in. Don't lose the momentum — pick the next one.",
+    ])
+  }
+
+  // Food / hungry / break
+  if (/\b(hungry|food|snack|break|tired|sleep|nap)\b/.test(m)) {
+    return "Take 10. Hydrate. Then we go again."
+  }
+
+  // School / lesson / class
+  if (/\b(school|lesson|class|teacher|homework|maths|english|science|history)\b/.test(m)) {
+    return "Want to do a lesson with me? Tap 🎙 Start a lesson on the dashboard. I'll listen and quiz you after."
+  }
+
+  // Game / play / fortnite / minecraft
+  if (/\b(game|gaming|play|fortnite|minecraft|roblox|youtube|tiktok)\b/.test(m)) {
+    return "After the tasks. That's the deal. Combo first, dopamine second."
+  }
+
+  // You / robot / fake
+  if (/\b(you'?re|youre|just a) (robot|bot|fake|ai)\b/.test(m)) {
+    return "Correct. A robot whose memory is better than yours. So — what's the next move?"
+  }
+
+  // Thanks
+  if (/\b(thanks|thank you|appreciate)\b/.test(m)) {
+    return "Any time. Now back to work."
+  }
+
+  // Question marks → engage
+  if (m.includes('?')) {
+    return "Good question. I'd actually answer it properly if you gave me a Claude API key in Profile. For now: think out loud and I'll listen."
+  }
+
+  // Default — at least echo something specific
+  const firstFewWords = userMessage.split(/\s+/).slice(0, 4).join(' ')
+  return `Heard you on "${firstFewWords}". Tell me more, or pick a task and get moving.`
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)] }
+
 // ─── Fallback Templates (sarcastic, funny, encouraging — no API needed) ───
 function getFallbackMessage(type, ctx) {
   const templates = {
@@ -244,11 +323,7 @@ function getFallbackMessage(type, ctx) {
       `${ctx.taskName} done. One sentence: what stuck?`,
       `Real talk — what's the one thing from ${ctx.taskName} you'll remember tomorrow?`,
     ],
-    [MESSAGE_TYPES.FREE_CHAT]: [
-      `Noted. So what's the next move?`,
-      `Heard. And?`,
-      `Mhm. Translate that into action for me.`,
-    ],
+    [MESSAGE_TYPES.FREE_CHAT]: [smartFreeChat(ctx.userMessage || '')],
   }
 
   const options = templates[type] || [`Keep moving, Vasco. The machine believes in you.`]

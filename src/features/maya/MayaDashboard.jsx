@@ -480,6 +480,8 @@ function StatsTab({ maya }) {
 
 // ─── Chat Tab ───
 function ChatTab({ maya, chatInput, setChatInput, messagesEndRef }) {
+  const navigate = useNavigate()
+  const hasApiKey = !!maya.profile?.anthropicApiKey
   const handleSend = () => {
     if (!chatInput.trim()) return
     maya.sendMessage(chatInput.trim())
@@ -487,6 +489,19 @@ function ChatTab({ maya, chatInput, setChatInput, messagesEndRef }) {
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 540px)', minHeight: 320 }}>
+      {!hasApiKey && (
+        <div
+          onClick={() => navigate('/profile')}
+          style={{
+            padding: '10px 12px', background: C.amber + '11',
+            border: `1px solid ${C.amber}44`, borderRadius: 10,
+            marginBottom: 10, cursor: 'pointer',
+            fontSize: 11, color: C.amber, lineHeight: 1.5,
+          }}
+        >
+          ⚠️ Maya is in <b>fallback mode</b> — replies are pre-written templates. Add a Claude API key in Profile to unlock real conversation.
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 12 }}>
         {maya.messages.length === 0 && (
           <div style={{ textAlign: 'center', color: C.dim, fontSize: 12, marginTop: 40 }}>
