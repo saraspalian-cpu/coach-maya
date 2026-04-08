@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadProfile, saveProfile } from './lib/profile'
 import { listAllVoices, waitForVoices, speak, cancelSpeech } from './lib/voice'
+import VoiceStatus from './components/VoiceStatus'
 
 const C = {
   bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
@@ -98,6 +99,8 @@ export default function MayaProfile() {
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.mono, paddingBottom: 80 }}>
       <Header onBack={() => navigate('/')} title="Profile" />
       <div style={{ padding: 16, maxWidth: 480, margin: '0 auto' }}>
+
+        <VoiceStatus />
 
         <Section title="Identity">
           <Row label="Name">

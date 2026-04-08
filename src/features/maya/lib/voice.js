@@ -71,8 +71,9 @@ function listAllVoices() {
 
 // ─── ElevenLabs (premium) ───
 async function speakElevenLabs(text, profile, callbacks = {}) {
-  const apiKey = profile.elevenLabsApiKey
-  const voiceId = profile.elevenLabsVoiceId || 'EXAVITQu4vr4xnSDxMaL' // Sarah default
+  const apiKey = profile.elevenLabsApiKey?.trim()
+  // Default to Drew (chill basketball player) if key set but no voice picked
+  const voiceId = profile.elevenLabsVoiceId?.trim() || '29vD33N1CtxCmqQRPOHJ'
   if (!apiKey) throw new Error('No ElevenLabs API key')
 
   callbacks.onStart?.()
@@ -94,7 +95,11 @@ async function speakElevenLabs(text, profile, callbacks = {}) {
       },
     }),
   })
-  if (!res.ok) throw new Error(`ElevenLabs error ${res.status}`)
+  if (!res.ok) {
+    let details = ''
+    try { details = await res.text() } catch {}
+    throw new Error(`ElevenLabs ${res.status}: ${details.slice(0, 200)}`)
+  }
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
   const audio = new Audio(url)
@@ -122,13 +127,24 @@ async function speak(text, { onStart, onBoundary, onEnd, onError } = {}) {
   const profile = loadProfile()
 
   // Try ElevenLabs first if configured
-  if (profile?.elevenLabsApiKey) {
+  if (profile?.elevenLabsApiKey && profile?.elevenLabsVoiceId) {
     try {
       await speakElevenLabs(text, profile, { onStart, onEnd, onError })
+      console.log('[Maya voice] ✓ ElevenLabs spoke')
       return
     } catch (e) {
-      console.warn('ElevenLabs failed, falling back to system voice:', e)
+      console.error('[Maya voice] ❌ ElevenLabs FAILED, falling back to system voice:', e?.message || e)
+      // Surface the error visibly via a toast-style notification
+      try {
+        if (typeof window !== 'undefined') {
+          window.__mayaVoiceError = e?.message || String(e)
+        }
+      } catch {}
     }
+  } else if (profile?.elevenLabsApiKey && !profile?.elevenLabsVoiceId) {
+    console.warn('[Maya voice] ElevenLabs key set but NO VOICE ID — pick a preset in Profile')
+  } else {
+    console.log('[Maya voice] Using system voice (no ElevenLabs key)')
   }
 
   if (!('speechSynthesis' in window)) {
