@@ -4,6 +4,7 @@ import { useMaya } from './context/MayaContext'
 import { LEVELS, ACHIEVEMENTS } from './agents/gamification'
 import { loadHistory as loadLessonHistory } from './agents/lessonAnalyst'
 import { getMemoryStats } from './agents/memory'
+import { weeklyInsights } from './agents/insights'
 
 // Lazy load 3D avatar (Three.js is ~800KB)
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
@@ -571,6 +572,7 @@ function SmartCTAs({ navigate }) {
   if (isMorning) ctas.push({ icon: '☀️', text: 'Morning ritual', sub: 'Set the day', go: '/ritual?mode=morning', color: '#FFA500' })
   if (isEvening) ctas.push({ icon: '🌙', text: 'Evening wrap', sub: 'Reflect & wrap', go: '/ritual?mode=evening', color: '#A78BFA' })
   if (memStats.dueToday > 0) ctas.push({ icon: '🧠', text: `${memStats.dueToday} concept${memStats.dueToday > 1 ? 's' : ''} due`, sub: 'Quick memory drill', go: '/memory', color: '#7db8e8' })
+  ctas.push({ icon: '📈', text: 'Insights', sub: 'Weekly trends', go: '/insights', color: C.teal })
 
   if (ctas.length === 0) return null
 
