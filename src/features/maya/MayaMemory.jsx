@@ -6,6 +6,62 @@ import {
 } from './agents/memory'
 import { useMaya } from './context/MayaContext'
 
+function ConceptMap({ onDelete, bump }) {
+  const concepts = getAllConcepts()
+  // Group by subject
+  const bySubject = {}
+  concepts.forEach(c => {
+    const s = c.subject || 'Other'
+    if (!bySubject[s]) bySubject[s] = []
+    bySubject[s].push(c)
+  })
+  const subjects = Object.keys(bySubject).sort()
+
+  const C = {
+    surface: '#0c1624', surfaceLight: '#121e30',
+    border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
+    teal: '#2DD4BF', gold: '#FFD700', dim: '#3a4f6a',
+  }
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+        Learning graph · by subject
+      </div>
+      {subjects.map(s => (
+        <div key={s} style={{
+          padding: 14, background: C.surface, borderRadius: 12,
+          border: `1px solid ${C.border}`, marginBottom: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 13, color: C.teal, fontWeight: 600 }}>{s}</div>
+            <div style={{ fontSize: 10, color: C.muted }}>
+              {bySubject[s].length} concepts · {bySubject[s].filter(c => c.box === 4).length} mastered
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {bySubject[s].map(c => {
+              const size = 11 + c.box * 1.5
+              const color = c.box === 4 ? C.gold : c.box >= 2 ? C.teal : C.muted
+              return (
+                <div key={c.id} title={`${c.phrase} · box ${c.box + 1}/5`} style={{
+                  padding: `5px ${8 + c.box * 2}px`,
+                  borderRadius: 999,
+                  background: color + '18',
+                  border: `1px solid ${color}55`,
+                  fontSize: size,
+                  color,
+                  fontWeight: c.box >= 2 ? 700 : 400,
+                }}>{c.phrase}</div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const C = {
   bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
   border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
@@ -19,6 +75,7 @@ export default function MayaMemory() {
   const navigate = useNavigate()
   const maya = useMaya()
   const [phase, setPhase] = useState('overview') // overview | review | done
+  const [view, setView] = useState('list') // list | graph
   const [due, setDue] = useState(() => getDueConcepts(15))
   const [idx, setIdx] = useState(0)
   const [answer, setAnswer] = useState('')
@@ -135,16 +192,39 @@ export default function MayaMemory() {
               )}
             </div>
 
-            {/* All concepts */}
+            {/* View toggle */}
             {!query && stats.total > 0 && (
-              <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-                  Everything Maya remembers
+              <>
+                <div style={{ display: 'flex', gap: 6, marginTop: 20, marginBottom: 8 }}>
+                  <button onClick={() => setView('list')} style={{
+                    flex: 1, padding: '8px', borderRadius: 8,
+                    background: view === 'list' ? C.teal + '22' : 'transparent',
+                    border: `1px solid ${view === 'list' ? C.teal : C.border}`,
+                    color: view === 'list' ? C.teal : C.muted,
+                    fontSize: 11, fontFamily: C.mono, cursor: 'pointer',
+                  }}>List</button>
+                  <button onClick={() => setView('graph')} style={{
+                    flex: 1, padding: '8px', borderRadius: 8,
+                    background: view === 'graph' ? C.teal + '22' : 'transparent',
+                    border: `1px solid ${view === 'graph' ? C.teal : C.border}`,
+                    color: view === 'graph' ? C.teal : C.muted,
+                    fontSize: 11, fontFamily: C.mono, cursor: 'pointer',
+                  }}>Graph</button>
                 </div>
-                {getAllConcepts().slice(0, 50).map(c => (
-                  <ConceptCard key={c.id} concept={c} onDelete={() => { deleteConcept(c.id); bump() }} />
-                ))}
-              </div>
+
+                {view === 'list' ? (
+                  <div>
+                    <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                      Everything Maya remembers
+                    </div>
+                    {getAllConcepts().slice(0, 50).map(c => (
+                      <ConceptCard key={c.id} concept={c} onDelete={() => { deleteConcept(c.id); bump() }} />
+                    ))}
+                  </div>
+                ) : (
+                  <ConceptMap onDelete={deleteConcept} bump={bump} />
+                )}
+              </>
             )}
           </>
         )}

@@ -186,6 +186,7 @@ export default function MayaDashboard({ onOpenSearch }) {
             <IconBtn onClick={() => navigate('/lessons')} title="Lesson vault">🎙</IconBtn>
             <IconBtn onClick={() => navigate('/memory')} title="Memory bank">🧠</IconBtn>
             <IconBtn onClick={() => navigate('/goals')} title="Big picture">🎯</IconBtn>
+            <IconBtn onClick={() => navigate('/shop')} title="XP shop">🛒</IconBtn>
             <IconBtn onClick={() => navigate('/profile')} title="Profile">👤</IconBtn>
             <IconBtn onClick={() => navigate('/parent')} title="Parent report">📊</IconBtn>
             <IconBtn onClick={() => navigate('/schedule')} title="Schedule">⚙</IconBtn>
