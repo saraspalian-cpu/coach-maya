@@ -8,6 +8,7 @@ import { loadProfile, saveProfile, buildPersonalityContext } from '../lib/profil
 import { speak, cancelSpeech, listen, isSTTSupported } from '../lib/voice'
 import { notify } from '../lib/notifications'
 import { startWatchdog, stopWatchdog } from '../lib/scheduler'
+import { WakeWordDetector } from '../lib/wakeWord'
 import {
   handleTaskComplete,
   handleTaskSkip,
@@ -105,6 +106,7 @@ function MayaProvider({ children }) {
   const tickRef = useRef(null)
   const lastSpokenIdRef = useRef(null)
   const stopListenRef = useRef(null)
+  const wakeRef = useRef(null)
   const [isListening, setIsListening] = useState(false)
   const [interimTranscript, setInterimTranscript] = useState('')
 
@@ -302,6 +304,29 @@ function MayaProvider({ children }) {
       spotChecks: state.spotChecks,
     })
   }, [state])
+
+  // Wake word — "hey maya"
+  useEffect(() => {
+    if (!state.profile?.wakeWordEnabled) {
+      wakeRef.current?.stop()
+      wakeRef.current = null
+      return
+    }
+    if (wakeRef.current) return
+    wakeRef.current = new WakeWordDetector({
+      onWake: (rest) => {
+        if (rest) {
+          sendMessage(rest)
+        } else {
+          // Just the trigger — open active listening
+          startListening()
+        }
+      },
+      onError: (e) => console.warn('wake word error', e),
+    })
+    wakeRef.current.start()
+    return () => { wakeRef.current?.stop() }
+  }, [state.profile?.wakeWordEnabled])
 
   // Start notification watchdog (1-min cadence, fires desktop nudges)
   useEffect(() => {

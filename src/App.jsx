@@ -18,6 +18,7 @@ const MayaMemory = lazy(() => import('./features/maya/MayaMemory'))
 const MayaRitual = lazy(() => import('./features/maya/MayaRitual'))
 const MayaGoals = lazy(() => import('./features/maya/MayaGoals'))
 const Onboarding = lazy(() => import('./features/maya/Onboarding'))
+const MayaHelp = lazy(() => import('./features/maya/MayaHelp'))
 
 function Loading() {
   return (
@@ -68,6 +69,7 @@ function GatedRoutes() {
           <Route path="/memory" element={<MayaMemory />} />
           <Route path="/ritual" element={<MayaRitual />} />
           <Route path="/goals" element={<MayaGoals />} />
+          <Route path="/help" element={<MayaHelp />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

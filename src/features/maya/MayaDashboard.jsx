@@ -189,6 +189,7 @@ export default function MayaDashboard({ onOpenSearch }) {
             <IconBtn onClick={() => navigate('/profile')} title="Profile">👤</IconBtn>
             <IconBtn onClick={() => navigate('/parent')} title="Parent report">📊</IconBtn>
             <IconBtn onClick={() => navigate('/schedule')} title="Schedule">⚙</IconBtn>
+            <IconBtn onClick={() => navigate('/help')} title="Tips">?</IconBtn>
           </div>
         </div>
 

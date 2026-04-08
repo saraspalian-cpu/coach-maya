@@ -135,6 +135,9 @@ export default function MayaProfile() {
           <Row label="Maya speaks aloud">
             <Toggle on={profile.voiceAutoSpeak} onChange={v => update({ voiceAutoSpeak: v })} />
           </Row>
+          <Row label='Wake word ("hey maya")'>
+            <Toggle on={profile.wakeWordEnabled} onChange={v => update({ wakeWordEnabled: v })} />
+          </Row>
 
           <Row label="System voice (free)">
             <select

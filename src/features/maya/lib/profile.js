@@ -29,6 +29,7 @@ const DEFAULT_PROFILE = {
   elevenLabsVoiceId: '',       // chosen ElevenLabs voice id
   anthropicApiKey: '',         // Claude API key — unlocks real Maya intelligence
   notificationsEnabled: false, // Web Notifications opt-in
+  wakeWordEnabled: false,      // "hey maya" always-listen
   avatarStyle: 'pixar',
   themeAccent: '#2DD4BF',
   // Personality model (learner-managed)

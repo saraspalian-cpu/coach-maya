@@ -26,6 +26,12 @@ export default function MayaLesson() {
   const maya = useMaya()
   const [phase, setPhase] = useState('pick')
   const [paused, setPaused] = useState(false)
+  const [draft, setDraft] = useState(() => {
+    try {
+      const raw = localStorage.getItem('maya_lesson_draft')
+      return raw ? JSON.parse(raw) : null
+    } catch { return null }
+  })
   const [subject, setSubject] = useState('Maths')
   const [transcript, setTranscript] = useState('')
   const [interim, setInterim] = useState('')
@@ -44,6 +50,26 @@ export default function MayaLesson() {
     if (timerRef.current) clearInterval(timerRef.current)
     if (phase === 'live') stopLessonCapture()
   }, [])
+
+  // Auto-save draft every 15s while live
+  useEffect(() => {
+    if (phase !== 'live') return
+    const i = setInterval(() => {
+      try {
+        localStorage.setItem('maya_lesson_draft', JSON.stringify({
+          subject, transcript, elapsed,
+          startedAt: startedAtRef.current,
+          savedAt: Date.now(),
+        }))
+      } catch {}
+    }, 15000)
+    return () => clearInterval(i)
+  }, [phase, subject, transcript, elapsed])
+
+  const clearDraft = () => {
+    try { localStorage.removeItem('maya_lesson_draft') } catch {}
+    setDraft(null)
+  }
 
   // ─── Phase: live capture ───
   const start = async () => {
@@ -152,6 +178,7 @@ export default function MayaLesson() {
       completedAt: new Date().toISOString(),
     }
     saveLesson(lessonRecord)
+    clearDraft()
 
     // Feed concepts into memory
     const concepts = extractConcepts(lessonResult.fullTranscript)
@@ -185,6 +212,49 @@ export default function MayaLesson() {
         {/* PICK PHASE */}
         {phase === 'pick' && (
           <>
+            {draft && draft.transcript && (
+              <div style={{
+                padding: 14, background: C.surfaceLight,
+                borderLeft: `3px solid ${C.amber}`, borderRadius: 10,
+                marginBottom: 14,
+              }}>
+                <div style={{ fontSize: 10, color: C.amber, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                  Unfinished lesson
+                </div>
+                <div style={{ fontSize: 12, color: C.text, marginBottom: 8 }}>
+                  {draft.subject} · {Math.round(draft.elapsed / 60)}m · {draft.transcript.split(/\s+/).length} words
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => {
+                      setSubject(draft.subject)
+                      setTranscript(draft.transcript)
+                      setElapsed(draft.elapsed)
+                      startedAtRef.current = Date.now() - draft.elapsed * 1000
+                      setPhase('live')
+                      startLessonCapture({
+                        subject: draft.subject,
+                        onInterim: (t) => setInterim(t),
+                        onFinal: (text, full) => { setTranscript(full); setInterim('') },
+                      })
+                      timerRef.current = setInterval(() => {
+                        setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000))
+                      }, 1000)
+                      clearDraft()
+                    }}
+                    style={{ ...primary, marginBottom: 0, flex: 1 }}
+                  >Resume</button>
+                  <button
+                    onClick={clearDraft}
+                    style={{
+                      padding: '12px 18px', background: 'transparent',
+                      border: `1px solid ${C.border}`, borderRadius: 12,
+                      color: C.muted, fontSize: 12, fontFamily: C.mono, cursor: 'pointer',
+                    }}
+                  >Discard</button>
+                </div>
+              </div>
+            )}
             <MayaAvatar state="speaking" size={220} />
             <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 16, marginTop: 8, textAlign: 'center' }}>
               I'll sit through your lesson, listen to the key parts, and quiz you afterward to lock it in.
