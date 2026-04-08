@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadProfile, saveProfile } from './lib/profile'
+import { speak } from './lib/voice'
 import { lazy, Suspense } from 'react'
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
 
@@ -161,6 +162,30 @@ export default function Onboarding() {
           />
           <p style={{ fontSize: 11, color: C.muted, marginTop: 12, lineHeight: 1.5 }}>
             I'll remember this. Every grind session is one step closer.
+          </p>
+        </div>
+      ),
+    },
+    {
+      title: 'Hear my voice.',
+      subtitle: 'Tap to test how I sound.',
+      content: (
+        <div style={{ textAlign: 'center', padding: '0 24px' }}>
+          <button
+            onClick={() => {
+              // Save first so voice picker uses current settings
+              saveProfile(profile)
+              speak(`Hey ${profile.name || 'Vasco'}. This is Maya. I'll be coaching you from here on out. Let's build something.`)
+            }}
+            style={{
+              padding: '14px 24px', background: C.teal,
+              border: 'none', borderRadius: 12,
+              color: C.bg, fontSize: 14, fontFamily: C.mono,
+              fontWeight: 700, cursor: 'pointer',
+            }}
+          >▶ Hear Maya</button>
+          <p style={{ fontSize: 11, color: C.muted, marginTop: 14, lineHeight: 1.5 }}>
+            Sounds robotic? You can switch to a real human voice later in Profile (ElevenLabs).
           </p>
         </div>
       ),

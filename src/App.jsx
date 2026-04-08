@@ -4,6 +4,7 @@ import { MayaProvider } from './features/maya/context/MayaContext'
 import CommandBar from './features/maya/components/CommandBar'
 import AchievementModal from './features/maya/components/AchievementModal'
 import LiveLessonBanner from './features/maya/components/LiveLessonBanner'
+import BottomNav from './features/maya/components/BottomNav'
 import { loadProfile } from './features/maya/lib/profile'
 
 // Eager: dashboard (needed immediately)
@@ -85,6 +86,7 @@ function GatedRoutes() {
       <CommandBar open={cmdOpen} onClose={() => setCmdOpen(false)} />
       <AchievementModal />
       <LiveLessonBanner />
+      {!needsOnboarding && <BottomNav />}
     </>
   )
 }

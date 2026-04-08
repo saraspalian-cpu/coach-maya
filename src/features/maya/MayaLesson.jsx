@@ -147,10 +147,14 @@ export default function MayaLesson() {
     setKeyPoints(points)
     setPhase('review')
 
-    // Maya speaks the recap
+    // Maya narrates the recap one beat at a time
     setTimeout(() => {
       const intro = `Lesson done. Here's what stuck out from your ${subject} session.`
       maya.speakText(intro)
+      // Then read each key point with a delay so user can follow
+      points.forEach((p, i) => {
+        setTimeout(() => maya.speakText(`Point ${i + 1}. ${p}`), (i + 1) * 4500)
+      })
     }, 400)
   }
 
