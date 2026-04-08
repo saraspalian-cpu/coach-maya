@@ -10,33 +10,43 @@ const C = {
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 
-// ElevenLabs voice presets — public library voices that match the
-// sarcastic / funny / encouraging / founder-energy vibe
+// ElevenLabs voice presets — public library voices
+// Tagged with vibes so you can match Maya's personality to what you want
 const VOICE_PRESETS = [
+  {
+    id: '29vD33N1CtxCmqQRPOHJ',
+    name: 'Drew 🏀',
+    desc: 'CHILL BASKETBALL PLAYER — laid-back American male, casual confident delivery. Post-game interview energy. ⭐ top pick',
+  },
+  {
+    id: 'TX3LPaxmHKxFdv7VOQHJ',
+    name: 'Liam 🏀',
+    desc: 'Young American athlete vibe — articulate, smooth, relaxed. Think young NBA guard.',
+  },
   {
     id: 'iP95p4xoKVk53GoZ742B',
     name: 'Chris',
-    desc: 'Chill American male, conversational — closest to founder/podcaster vibe',
+    desc: 'Chill conversational American — podcaster/founder energy',
   },
   {
     id: 'TxGEqnHWrfWFTfGW9XjX',
     name: 'Josh',
-    desc: 'Young American male, confident — relaxed builder energy',
+    desc: 'Young American male, deep confident — relaxed builder',
+  },
+  {
+    id: 'pNInz6obpgDQGcFmaJgB',
+    name: 'Adam',
+    desc: 'Deep mature American — authoritative coach vibe',
   },
   {
     id: 'pqHfZKP75CvOlQylNhV4',
     name: 'Bill',
-    desc: 'Older American male, warm — wise mentor vibe',
-  },
-  {
-    id: 'nPczCjzI2devNBz1zQrb',
-    name: 'Brian',
-    desc: 'Deep American narrator — calm authority',
+    desc: 'Older American male, warm — wise mentor',
   },
   {
     id: 'yoZ06aMxZJJ28mfd3POQ',
     name: 'Sam',
-    desc: 'Raspy American male — sarcastic edge',
+    desc: 'Raspy American — sarcastic edge',
   },
   {
     id: 'EXAVITQu4vr4xnSDxMaL',
