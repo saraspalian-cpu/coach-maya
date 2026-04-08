@@ -118,6 +118,21 @@ function MayaProvider({ children }) {
     saveToStorage(STORAGE_KEY, rest)
   }, [state])
 
+  // One-time migration: force voice OFF for users who had it on from earlier versions
+  useEffect(() => {
+    try {
+      const key = 'maya_voice_disabled_v1'
+      if (!localStorage.getItem(key)) {
+        const p = loadProfile()
+        if (p.voiceAutoSpeak || p.voiceEnabled) {
+          saveProfile({ ...p, voiceAutoSpeak: false, voiceEnabled: false })
+          dispatch({ type: 'SET_PROFILE', payload: { ...p, voiceAutoSpeak: false, voiceEnabled: false } })
+        }
+        localStorage.setItem(key, '1')
+      }
+    } catch {}
+  }, [])
+
   // Auto-speak Maya messages + send notification if backgrounded
   useEffect(() => {
     const last = state.messages[state.messages.length - 1]
@@ -293,12 +308,14 @@ function MayaProvider({ children }) {
   }, [])
 
   const speakText = useCallback((text) => {
+    // Only speak if user has opted in (voice is off by default now)
+    if (!state.profile?.voiceAutoSpeak) return
     dispatch({ type: 'SET_VOICE_STATE', payload: 'speaking' })
     speak(text, {
       onEnd: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
       onError: () => dispatch({ type: 'SET_VOICE_STATE', payload: 'idle' }),
     })
-  }, [])
+  }, [state.profile])
 
   const getDailyReport = useCallback(() => {
     return generateDailyReport({

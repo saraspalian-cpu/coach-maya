@@ -22,8 +22,8 @@ const DEFAULT_PROFILE = {
   pushIntensity: 'medium',     // light | medium | hard
   motivationDriver: 'competition', // competition | identity | mastery | autonomy
   // Voice & avatar
-  voiceEnabled: true,
-  voiceAutoSpeak: true,
+  voiceEnabled: false,
+  voiceAutoSpeak: false,
   systemVoice: null,           // chosen system voice name (null = auto-pick best)
   elevenLabsApiKey: '',        // ElevenLabs API key for premium TTS
   elevenLabsVoiceId: '',       // chosen ElevenLabs voice id
@@ -52,7 +52,6 @@ function loadProfile() {
     const raw = localStorage.getItem(PROFILE_KEY)
     if (!raw) return { ...DEFAULT_PROFILE }
     const parsed = JSON.parse(raw)
-    // Migrate / merge defaults so new fields appear
     return { ...DEFAULT_PROFILE, ...parsed, version: PROFILE_VERSION }
   } catch {
     return { ...DEFAULT_PROFILE }
