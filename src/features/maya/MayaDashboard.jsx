@@ -58,6 +58,26 @@ export default function MayaDashboard({ onOpenSearch }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // First-mount-of-the-day greeting
+  useEffect(() => {
+    const todayKey = `maya_greeted_${new Date().toISOString().slice(0, 10)}`
+    if (localStorage.getItem(todayKey)) return
+    const t = setTimeout(() => {
+      const hour = new Date().getHours()
+      const name = profile?.name || 'Vasco'
+      const opener = hour < 11
+        ? `Morning, ${name}. Day ${profile?.currentStreak || 1} of the streak. Let's lock in.`
+        : hour < 17
+          ? `Hey ${name}. Pick a task and get moving. I'm watching.`
+          : hour < 22
+            ? `Evening, ${name}. Wrap-up time?`
+            : `Late one, ${name}. Don't push too hard. Tomorrow exists.`
+      maya.speakText(opener)
+      localStorage.setItem(todayKey, '1')
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [])
+
   const completedCount = tasks.filter(t => t.completed).length
   const totalCount = tasks.length
   const progressPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
@@ -582,6 +602,7 @@ function NavRow({ navigate }) {
     { icon: '🎙', label: 'Vault', to: '/lessons' },
     { icon: '🧠', label: 'Memory', to: '/memory' },
     { icon: '🎯', label: 'Goals', to: '/goals' },
+    { icon: '⏱', label: 'Focus', to: '/focus' },
     { icon: '📈', label: 'Insights', to: '/insights' },
     { icon: '📖', label: 'Story', to: '/story' },
     { icon: '📓', label: 'Journal', to: '/journal' },

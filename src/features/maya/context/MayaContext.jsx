@@ -9,6 +9,7 @@ import { speak, cancelSpeech, listen, isSTTSupported } from '../lib/voice'
 import { notify } from '../lib/notifications'
 import { startWatchdog, stopWatchdog } from '../lib/scheduler'
 import { WakeWordDetector } from '../lib/wakeWord'
+import sfx from '../lib/sfx'
 import {
   handleTaskComplete,
   handleTaskSkip,
@@ -144,6 +145,7 @@ function MayaProvider({ children }) {
   const completeTask = useCallback(async (taskId) => {
     const task = state.tasks.find(t => t.id === taskId)
     if (!task || task.completed) return
+    sfx.taskComplete()
     dispatch({ type: 'COMPLETE_TASK', payload: { id: taskId } })
 
     const result = await handleTaskComplete(task, {
@@ -163,6 +165,9 @@ function MayaProvider({ children }) {
     }})
     if (result.messages.length > 0) {
       dispatch({ type: 'ADD_MESSAGES', payload: result.messages })
+      // Combo + achievement sounds
+      if (result.messages.some(m => m.type === 'achievement')) sfx.achievement()
+      else if (result.state.gamification?.combo >= 3) sfx.combo()
     }
 
     // Personality learner
