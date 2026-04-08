@@ -33,6 +33,21 @@ const TASK_TYPES = [
   { value: 'reflection', label: 'Reflection', icon: '🪞' },
 ]
 
+// One-tap templates for common task patterns
+const TEMPLATES = [
+  { name: 'Maths drill (30m)', type: 'maths', duration: 30 },
+  { name: 'Reading session', type: 'reading', duration: 30 },
+  { name: 'Piano practice', type: 'piano', duration: 30 },
+  { name: 'Tennis drills', type: 'tennis', duration: 60 },
+  { name: 'Online lesson', type: 'homework', duration: 45 },
+  { name: 'Homework block', type: 'homework', duration: 45 },
+  { name: 'Science', type: 'science', duration: 45 },
+  { name: 'Writing', type: 'writing', duration: 30 },
+  { name: 'Revision', type: 'revision', duration: 30 },
+  { name: 'Workout', type: 'exercise', duration: 30 },
+  { name: 'Reflection', type: 'reflection', duration: 10 },
+]
+
 export default function MayaSchedule() {
   const maya = useMaya()
   const navigate = useNavigate()
@@ -284,6 +299,41 @@ export default function MayaSchedule() {
         >
           + Add Task
         </button>
+
+        {/* Quick templates */}
+        <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginTop: 18, marginBottom: 8 }}>
+          Quick templates
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {TEMPLATES.map((tpl, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                const t = {
+                  id: `${Date.now()}_${i}`,
+                  name: tpl.name,
+                  type: tpl.type,
+                  duration: tpl.duration,
+                  startTime: null,
+                  completed: false,
+                }
+                setTasks([...tasks, t])
+              }}
+              style={{
+                padding: '6px 10px',
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 999,
+                color: C.text,
+                fontSize: 10,
+                fontFamily: C.mono,
+                cursor: 'pointer',
+              }}
+            >
+              + {tpl.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Reset Day Button */}

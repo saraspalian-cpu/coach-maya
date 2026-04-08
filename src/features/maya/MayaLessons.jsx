@@ -24,6 +24,38 @@ export default function MayaLessons() {
     deleteAudio(id).catch(() => {})
   }
 
+  const exportLesson = (lesson) => {
+    const lines = [
+      `# ${lesson.subject} Lesson`,
+      ``,
+      `**Date:** ${new Date(lesson.startedAt).toLocaleString()}`,
+      `**Duration:** ${lesson.durationMin} min`,
+      `**Words captured:** ${lesson.wordCount}`,
+      `**XP earned:** ${lesson.xpEarned || 0}`,
+      lesson.grading && `**Quiz score:** ${lesson.grading.overallScore}/100`,
+      lesson.grading?.feedback && `**Maya's feedback:** ${lesson.grading.feedback}`,
+      ``,
+      `## Key Takeaways`,
+      ...(lesson.keyPoints || []).map((kp, i) => `${i + 1}. ${kp}`),
+      ``,
+      `## Quiz Q&A`,
+      ...(lesson.quiz || []).flatMap((q, i) => [
+        `### Q${i + 1}: ${q.q}`,
+        `> ${q.a || '(no answer)'}`,
+        '',
+      ]),
+      `## Full Transcript`,
+      lesson.fullTranscript || '(none)',
+    ].filter(Boolean)
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `lesson-${lesson.subject.toLowerCase()}-${(lesson.startedAt || '').slice(0, 10)}.md`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 200)
+  }
+
   const loadAudio = async (id) => {
     if (audioUrls[id]) return
     const blob = await getAudio(id)
@@ -141,14 +173,24 @@ export default function MayaLessons() {
                     ))}
                   </>
                 )}
-                <button
-                  onClick={() => remove(l.id)}
-                  style={{
-                    marginTop: 8, padding: '6px 12px', background: 'transparent',
-                    border: `1px solid ${C.red}44`, borderRadius: 6,
-                    color: C.red, fontSize: 10, fontFamily: C.mono, cursor: 'pointer',
-                  }}
-                >Delete</button>
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  <button
+                    onClick={() => exportLesson(l)}
+                    style={{
+                      padding: '6px 12px', background: 'transparent',
+                      border: `1px solid ${C.teal}44`, borderRadius: 6,
+                      color: C.teal, fontSize: 10, fontFamily: C.mono, cursor: 'pointer',
+                    }}
+                  >⬇ Export markdown</button>
+                  <button
+                    onClick={() => remove(l.id)}
+                    style={{
+                      padding: '6px 12px', background: 'transparent',
+                      border: `1px solid ${C.red}44`, borderRadius: 6,
+                      color: C.red, fontSize: 10, fontFamily: C.mono, cursor: 'pointer',
+                    }}
+                  >Delete</button>
+                </div>
               </div>
             )}
           </div>

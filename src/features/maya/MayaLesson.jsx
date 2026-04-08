@@ -97,6 +97,7 @@ export default function MayaLesson() {
       onFinal: (text, full) => { setTranscript(full); setInterim('') },
       onError: (e) => console.warn('Lesson capture error:', e),
     })
+    maya.setLiveLesson?.({ subject, startedAt: new Date().toISOString() })
 
     timerRef.current = setInterval(() => {
       const secs = Math.floor((Date.now() - startedAtRef.current) / 1000)
@@ -135,11 +136,13 @@ export default function MayaLesson() {
 
     if (!result || !result.fullTranscript || result.wordCount < 10) {
       setPhase('pick')
+      maya.setLiveLesson?.(null)
       maya.speakText("I didn't catch enough audio. Try moving closer to the speaker.")
       return
     }
     result.audioId = audioId
     setLessonResult(result)
+    maya.setLiveLesson?.(null)
     const points = extractKeyPoints(result.fullTranscript, 3)
     setKeyPoints(points)
     setPhase('review')

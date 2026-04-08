@@ -109,6 +109,7 @@ function MayaProvider({ children }) {
   const wakeRef = useRef(null)
   const [isListening, setIsListening] = useState(false)
   const [interimTranscript, setInterimTranscript] = useState('')
+  const [liveLesson, setLiveLesson] = useState(null) // { subject, startedAt }
 
   // Persist
   useEffect(() => {
@@ -375,6 +376,8 @@ function MayaProvider({ children }) {
     voiceState: state.voiceState,
     isListening,
     interimTranscript,
+    liveLesson,
+    setLiveLesson,
     comboTimeLeft,
     completeTask,
     skipTask,
