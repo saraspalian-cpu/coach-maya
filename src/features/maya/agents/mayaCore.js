@@ -115,23 +115,20 @@ function buildPrompt(type, context) {
 }
 
 // ─── Generate Maya Message (calls Claude API) ───
-async function generateMessage(type, context, personalityContext = '') {
+async function generateMessage(type, context, personalityContext = '', history = []) {
   const systemPrompt = MAYA_SYSTEM_PROMPT.replace('{personality_context}', personalityContext)
   const userPrompt = buildPrompt(type, context)
 
-  // For Phase 1 on iPad, we use local generation with fallback templates
-  // When Claude API is wired up, this calls the API
   try {
-    const response = await callClaudeAPI(systemPrompt, userPrompt)
+    const response = await callClaudeAPI(systemPrompt, userPrompt, history)
     return { text: response, type, timestamp: new Date().toISOString() }
   } catch (err) {
-    // Fallback to template-based messages
     return { text: getFallbackMessage(type, context), type, timestamp: new Date().toISOString() }
   }
 }
 
 // ─── Claude API Call ───
-async function callClaudeAPI(systemPrompt, userPrompt) {
+async function callClaudeAPI(systemPrompt, userPrompt, history = []) {
   // Read key from profile (preferred) or env var (fallback)
   let apiKey = ''
   try {
@@ -152,9 +149,12 @@ async function callClaudeAPI(systemPrompt, userPrompt) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5',
-      max_tokens: 200,
+      max_tokens: 250,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [
+        ...history,
+        { role: 'user', content: userPrompt },
+      ],
     }),
   })
 

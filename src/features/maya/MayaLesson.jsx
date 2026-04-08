@@ -5,6 +5,8 @@ import {
   generateQuiz, extractKeyPoints, extractConcepts, saveLesson,
 } from './agents/lessonAnalyst'
 import { addConceptsFromLesson } from './agents/memory'
+import { gradeQuiz } from './agents/quizGrader'
+import { LessonRecorder, putAudio } from './lib/audioStore'
 import { useMaya } from './context/MayaContext'
 import MayaAvatar from './components/Maya3D'
 
@@ -31,9 +33,11 @@ export default function MayaLesson() {
   const [quiz, setQuiz] = useState([])
   const [answers, setAnswers] = useState({})
   const [lessonResult, setLessonResult] = useState(null)
+  const [grading, setGrading] = useState(null)
   const startedAtRef = useRef(null)
   const timerRef = useRef(null)
   const lastNudgeRef = useRef(0)
+  const recorderRef = useRef(null)
 
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -41,12 +45,20 @@ export default function MayaLesson() {
   }, [])
 
   // ─── Phase: live capture ───
-  const start = () => {
+  const start = async () => {
     setTranscript('')
     setInterim('')
     setElapsed(0)
     startedAtRef.current = Date.now()
     setPhase('live')
+
+    // Kick off audio recording in parallel (IndexedDB)
+    try {
+      recorderRef.current = new LessonRecorder()
+      await recorderRef.current.start()
+    } catch (e) {
+      console.warn('Recording disabled:', e)
+    }
 
     startLessonCapture({
       subject,
@@ -74,15 +86,28 @@ export default function MayaLesson() {
     }, 1000)
   }
 
-  const stop = () => {
+  const stop = async () => {
     if (timerRef.current) clearInterval(timerRef.current)
     const result = stopLessonCapture()
+
+    // Stop + persist recording
+    let audioId = null
+    if (recorderRef.current) {
+      try {
+        const blob = await recorderRef.current.stop()
+        if (blob && result?.id) {
+          audioId = result.id
+          await putAudio(audioId, blob)
+        }
+      } catch (e) { console.warn('audio save failed', e) }
+    }
+
     if (!result || !result.fullTranscript || result.wordCount < 10) {
-      // Not enough captured
       setPhase('pick')
       maya.speakText("I didn't catch enough audio. Try moving closer to the speaker.")
       return
     }
+    result.audioId = audioId
     setLessonResult(result)
     const points = extractKeyPoints(result.fullTranscript, 3)
     setKeyPoints(points)
@@ -102,31 +127,46 @@ export default function MayaLesson() {
     setPhase('quiz')
   }
 
-  const submitQuiz = () => {
-    // Score: # of non-empty answers, weighted by length
-    const filled = Object.values(answers).filter(a => a?.trim().length > 5).length
-    const ratio = filled / quiz.length
-    const xpBase = 30 + Math.round(40 * ratio)
+  const submitQuiz = async () => {
+    setPhase('grading')
+    maya.speakText('Grading your answers. One sec.')
+
+    const filledQuiz = quiz.map((q, i) => ({ q: q.q, a: answers[i] || '' }))
+    let graded
+    try {
+      graded = await gradeQuiz(filledQuiz, lessonResult.fullTranscript, subject)
+    } catch {
+      graded = { overallScore: 50, feedback: 'Grading unavailable.', perQuestion: [] }
+    }
+
+    // XP based on actual score
+    const xpBase = Math.round(30 + (graded.overallScore / 100) * 50)
 
     const lessonRecord = {
       ...lessonResult,
       keyPoints,
-      quiz: quiz.map((q, i) => ({ q: q.q, a: answers[i] || '' })),
+      quiz: filledQuiz,
+      grading: graded,
       xpEarned: xpBase,
       completedAt: new Date().toISOString(),
     }
     saveLesson(lessonRecord)
 
-    // Feed concepts into spaced-repetition memory
+    // Feed concepts into memory
     const concepts = extractConcepts(lessonResult.fullTranscript)
     addConceptsFromLesson(lessonResult, concepts)
 
-    // Push a synthetic completion message into the chat
-    const summary = `Just finished a ${lessonResult.durationMin}-min ${subject} lesson. Key takeaway: ${keyPoints[0] || 'reviewed core concepts'}. Answered ${filled}/${quiz.length} quiz questions.`
+    setGrading(graded)
+    setPhase('done')
+
+    // Speak the feedback
+    setTimeout(() => maya.speakText(graded.feedback), 400)
+
+    // Push summary into chat
+    const summary = `Finished a ${lessonResult.durationMin}-min ${subject} lesson. Score: ${graded.overallScore}/100. Takeaway: ${keyPoints[0] || 'reviewed core concepts'}.`
     maya.sendMessage(summary)
 
-    setPhase('done')
-    setTimeout(() => navigate('/'), 2500)
+    setTimeout(() => navigate('/'), 5000)
   }
 
   const cancel = () => {
@@ -279,16 +319,69 @@ export default function MayaLesson() {
           </>
         )}
 
+        {/* GRADING PHASE */}
+        {phase === 'grading' && (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <MayaAvatar state="thinking" size={220} />
+            <div style={{ fontFamily: C.display, fontSize: 28, color: C.teal, marginTop: 12, letterSpacing: 1.5 }}>
+              GRADING...
+            </div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
+              Maya's reading your answers against the lesson.
+            </div>
+          </div>
+        )}
+
         {/* DONE PHASE */}
         {phase === 'done' && (
-          <div style={{ textAlign: 'center', padding: 24 }}>
-            <MayaAvatar state="celebrating" size={240} />
-            <div style={{ fontFamily: C.display, fontSize: 32, color: C.gold, marginTop: 12, letterSpacing: 1.5 }}>
-              LOCKED IN
-            </div>
-            <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>
-              That lesson is now part of you.
-            </div>
+          <div style={{ textAlign: 'center', padding: '20px 8px' }}>
+            <MayaAvatar state={grading?.overallScore >= 70 ? 'celebrating' : 'idle'} size={200} />
+            {grading && (
+              <>
+                <div style={{
+                  fontFamily: C.display, fontSize: 72, lineHeight: 1,
+                  color: grading.overallScore >= 80 ? C.gold : grading.overallScore >= 60 ? C.green : grading.overallScore >= 40 ? C.amber : C.red,
+                  marginTop: 8,
+                }}>{grading.overallScore}</div>
+                <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1 }}>/ 100</div>
+                <div style={{
+                  fontSize: 13, color: C.text, lineHeight: 1.5,
+                  padding: '14px 10px', marginTop: 10,
+                  background: C.surface, borderRadius: 12,
+                  border: `1px solid ${C.border}`,
+                  textAlign: 'left',
+                }}>
+                  {grading.feedback}
+                </div>
+                {grading.perQuestion?.length > 0 && (
+                  <div style={{ marginTop: 12, textAlign: 'left' }}>
+                    {grading.perQuestion.map((pq, i) => (
+                      <div key={i} style={{
+                        padding: '8px 10px', background: C.surfaceLight,
+                        borderRadius: 8, marginBottom: 4,
+                        fontSize: 11, display: 'flex', gap: 10,
+                      }}>
+                        <div style={{
+                          minWidth: 32, fontWeight: 700,
+                          color: pq.score >= 70 ? C.green : pq.score >= 40 ? C.amber : C.red,
+                        }}>{pq.score}</div>
+                        <div style={{ color: C.text, flex: 1 }}>{pq.note}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {!grading && (
+              <>
+                <div style={{ fontFamily: C.display, fontSize: 32, color: C.gold, marginTop: 12, letterSpacing: 1.5 }}>
+                  LOCKED IN
+                </div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>
+                  That lesson is now part of you.
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

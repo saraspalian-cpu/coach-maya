@@ -187,12 +187,32 @@ async function handleScheduleTick(state, personalityContext) {
 }
 
 /**
- * Handle free chat from Vasco
+ * Handle free chat from Vasco — with last 10 turns of history for context
  */
 async function handleUserChat(message, state, personalityContext) {
+  // Build Claude-compatible history from recent messages (excluding the one just sent)
+  const recent = (state.messages || []).slice(-20)
+  const history = recent
+    .filter(m => m.text && ['user', 'free_chat'].includes(m.type) || (!m.type || m.type === 'task_debrief' || m.type === 'pre_task_nudge'))
+    .map(m => ({
+      role: m.type === 'user' ? 'user' : 'assistant',
+      content: m.text,
+    }))
+    // Collapse consecutive same-role messages (Claude API requirement)
+    .reduce((acc, m) => {
+      const last = acc[acc.length - 1]
+      if (last && last.role === m.role) {
+        last.content += '\n' + m.content
+      } else {
+        acc.push({ ...m })
+      }
+      return acc
+    }, [])
+    .slice(-10)
+
   const mayaMsg = await generateMessage(MESSAGE_TYPES.FREE_CHAT, {
     userMessage: message,
-  }, personalityContext)
+  }, personalityContext, history)
 
   return {
     events: [{ agent: 'maya_core', action: 'free_chat' }],

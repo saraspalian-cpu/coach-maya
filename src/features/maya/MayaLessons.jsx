@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadHistory, deleteLesson } from './agents/lessonAnalyst'
+import { getAudio, deleteAudio } from './lib/audioStore'
 
 const C = {
   bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
@@ -14,10 +15,22 @@ export default function MayaLessons() {
   const navigate = useNavigate()
   const [lessons, setLessons] = useState(loadHistory())
   const [open, setOpen] = useState(null)
+  const [audioUrls, setAudioUrls] = useState({}) // id -> object url
+  const audioRef = useRef(null)
 
   const remove = (id) => {
     if (!confirm('Delete this lesson?')) return
     setLessons(deleteLesson(id))
+    deleteAudio(id).catch(() => {})
+  }
+
+  const loadAudio = async (id) => {
+    if (audioUrls[id]) return
+    const blob = await getAudio(id)
+    if (blob) {
+      const url = URL.createObjectURL(blob)
+      setAudioUrls(prev => ({ ...prev, [id]: url }))
+    }
   }
 
   const totalLessons = lessons.length
@@ -67,7 +80,11 @@ export default function MayaLessons() {
             border: `1px solid ${C.border}`, marginBottom: 8,
           }}>
             <div
-              onClick={() => setOpen(open === l.id ? null : l.id)}
+              onClick={() => {
+                const next = open === l.id ? null : l.id
+                setOpen(next)
+                if (next) loadAudio(l.id)
+              }}
               style={{ cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -86,6 +103,21 @@ export default function MayaLessons() {
 
             {open === l.id && (
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                {audioUrls[l.id] && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 9, color: C.teal, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Listen back</div>
+                    <audio controls src={audioUrls[l.id]} style={{ width: '100%' }} />
+                  </div>
+                )}
+                {l.grading && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 9, color: C.teal, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Quiz score</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: l.grading.overallScore >= 80 ? C.gold : l.grading.overallScore >= 60 ? C.green : C.amber }}>
+                      {l.grading.overallScore}/100
+                    </div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{l.grading.feedback}</div>
+                  </div>
+                )}
                 {l.keyPoints?.length > 0 && (
                   <>
                     <div style={{ fontSize: 9, color: C.gold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Takeaways</div>
