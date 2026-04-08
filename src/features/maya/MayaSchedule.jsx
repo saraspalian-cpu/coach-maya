@@ -33,6 +33,32 @@ const TASK_TYPES = [
   { value: 'reflection', label: 'Reflection', icon: '🪞' },
 ]
 
+// Whole-day presets — overwrite the schedule with a tested template
+const DAY_PRESETS = {
+  light: [
+    { name: 'Reading', type: 'reading', duration: 30 },
+    { name: 'Maths drill', type: 'maths', duration: 30 },
+    { name: 'Reflection', type: 'reflection', duration: 10 },
+  ],
+  normal: [
+    { name: 'Maths', type: 'maths', duration: 45 },
+    { name: 'Reading', type: 'reading', duration: 30 },
+    { name: 'Tennis', type: 'tennis', duration: 60 },
+    { name: 'Piano', type: 'piano', duration: 30 },
+    { name: 'Reflection', type: 'reflection', duration: 10 },
+  ],
+  full: [
+    { name: 'Morning ritual', type: 'reflection', duration: 10 },
+    { name: 'Maths', type: 'maths', duration: 45 },
+    { name: 'Reading', type: 'reading', duration: 30 },
+    { name: 'Online lesson', type: 'homework', duration: 45 },
+    { name: 'Tennis', type: 'tennis', duration: 60 },
+    { name: 'Piano', type: 'piano', duration: 30 },
+    { name: 'Homework', type: 'homework', duration: 30 },
+    { name: 'Evening reflection', type: 'reflection', duration: 10 },
+  ],
+}
+
 // One-tap templates for common task patterns
 const TEMPLATES = [
   { name: 'Maths drill (30m)', type: 'maths', duration: 30 },
@@ -145,6 +171,34 @@ export default function MayaSchedule() {
       }}>
         <span>{tasks.length} tasks</span>
         <span>Potential: <span style={{ color: C.gold }}>{totalXP} base XP</span> (up to {Math.round(totalXP * 2.5)}× with combos)</span>
+      </div>
+
+      {/* Day Presets */}
+      <div style={{ padding: '12px 16px 0' }}>
+        <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+          Day presets
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {Object.entries(DAY_PRESETS).map(([key, preset]) => (
+            <button
+              key={key}
+              onClick={() => {
+                if (!confirm(`Replace today's schedule with the "${key}" preset?`)) return
+                const newTasks = preset.map((t, i) => ({
+                  ...t, id: `${Date.now()}_${i}`,
+                  startTime: null, completed: false,
+                }))
+                setTasks(newTasks)
+              }}
+              style={{
+                flex: 1, padding: '8px 4px',
+                background: 'transparent', border: `1px solid ${C.border}`,
+                borderRadius: 8, color: C.text, fontSize: 11,
+                fontFamily: C.mono, cursor: 'pointer', textTransform: 'capitalize',
+              }}
+            >{key}</button>
+          ))}
+        </div>
       </div>
 
       {/* Task List */}
