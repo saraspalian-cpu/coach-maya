@@ -1,10 +1,22 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 import { LEVELS, ACHIEVEMENTS } from './agents/gamification'
 import { loadHistory as loadLessonHistory } from './agents/lessonAnalyst'
 import { getMemoryStats } from './agents/memory'
-import MayaAvatar from './components/Maya3D'
+
+// Lazy load 3D avatar (Three.js is ~800KB)
+const MayaAvatar = lazy(() => import('./components/Maya3D'))
+
+function AvatarFallback({ size }) {
+  return (
+    <div style={{
+      width: size, height: size, margin: '0 auto',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: Math.round(size / 3),
+    }}>🤖</div>
+  )
+}
 
 const C = {
   bg: '#060c18',
@@ -37,7 +49,7 @@ export default function MayaDashboard({ onOpenSearch }) {
 
   const {
     gamification: gam, tasks, messages, comboTimeLeft, pendingSpotCheck,
-    todayMood, voiceState, isListening, profile,
+    todayMood, voiceState, isListening, profile, streak,
   } = maya
 
   useEffect(() => {
@@ -85,7 +97,9 @@ export default function MayaDashboard({ onOpenSearch }) {
         borderBottom: `1px solid ${C.border}`,
         position: 'relative',
       }}>
-        <MayaAvatar state={avatarState} size={300} />
+        <Suspense fallback={<AvatarFallback size={300} />}>
+          <MayaAvatar state={avatarState} size={300} />
+        </Suspense>
 
         {/* Voice control floating button */}
         <button
@@ -123,6 +137,21 @@ export default function MayaDashboard({ onOpenSearch }) {
              avatarState === 'thinking' ? '● Listening...' :
              `Level ${gam.level?.level} · ${gam.level?.title}`}
           </div>
+
+          {/* Streak pill */}
+          {(profile?.currentStreak || 0) > 0 && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              marginTop: 8, padding: '4px 12px',
+              background: C.surfaceLight, borderRadius: 999,
+              border: `1px solid ${C.gold}44`,
+            }}>
+              <span style={{ fontSize: 12 }}>🔥</span>
+              <span style={{ fontSize: 11, color: C.gold, fontWeight: 700 }}>
+                {profile.currentStreak}-day streak
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

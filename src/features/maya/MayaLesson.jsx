@@ -25,6 +25,7 @@ export default function MayaLesson() {
   const navigate = useNavigate()
   const maya = useMaya()
   const [phase, setPhase] = useState('pick')
+  const [paused, setPaused] = useState(false)
   const [subject, setSubject] = useState('Maths')
   const [transcript, setTranscript] = useState('')
   const [interim, setInterim] = useState('')
@@ -242,7 +243,35 @@ export default function MayaLesson() {
               </div>
             </div>
 
-            <button onClick={stop} style={{ ...primary, background: C.red }}>End Lesson</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => {
+                  if (paused) {
+                    // Resume
+                    setPaused(false)
+                    startedAtRef.current = Date.now() - elapsed * 1000
+                    startLessonCapture({
+                      subject,
+                      onInterim: (t) => setInterim(t),
+                      onFinal: (text, full) => { setTranscript(full); setInterim('') },
+                    })
+                    timerRef.current = setInterval(() => {
+                      setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000))
+                    }, 1000)
+                    maya.speakText('And we are back.')
+                  } else {
+                    setPaused(true)
+                    stopLessonCapture()
+                    if (timerRef.current) clearInterval(timerRef.current)
+                    maya.speakText('Paused. Take your break.')
+                  }
+                }}
+                style={{ ...primary, flex: 1, background: paused ? C.green : C.amber }}
+              >
+                {paused ? '▶ Resume' : '⏸ Pause'}
+              </button>
+              <button onClick={stop} style={{ ...primary, flex: 1, background: C.red }}>End</button>
+            </div>
           </>
         )}
 

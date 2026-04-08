@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadProfile, saveProfile } from './lib/profile'
-import MayaAvatar from './components/Maya3D'
+import { lazy, Suspense } from 'react'
+const MayaAvatar = lazy(() => import('./components/Maya3D'))
 
 const C = {
   bg: '#060c18',
@@ -198,7 +199,9 @@ export default function Onboarding() {
     }}>
       {/* Maya hero */}
       <div style={{ paddingTop: 24 }}>
-        <MayaAvatar state={isLast ? 'celebrating' : 'speaking'} size={260} />
+        <Suspense fallback={<div style={{ height: 260 }}/>}>
+          <MayaAvatar state={isLast ? 'celebrating' : 'speaking'} size={260} />
+        </Suspense>
       </div>
 
       {/* Progress dots */}
