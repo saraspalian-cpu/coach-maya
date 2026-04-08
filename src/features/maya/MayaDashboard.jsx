@@ -583,6 +583,7 @@ function NavRow({ navigate }) {
     { icon: '🧠', label: 'Memory', to: '/memory' },
     { icon: '🎯', label: 'Goals', to: '/goals' },
     { icon: '📈', label: 'Insights', to: '/insights' },
+    { icon: '📖', label: 'Story', to: '/story' },
     { icon: '📓', label: 'Journal', to: '/journal' },
     { icon: '🛒', label: 'Shop', to: '/shop' },
     { icon: '📊', label: 'Parent', to: '/parent' },

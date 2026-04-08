@@ -27,6 +27,7 @@ const NAV_ACTIONS = [
   { id: 'morning',     label: 'Morning ritual',    sub: 'Set the day',      icon: '☀️', go: '/ritual?mode=morning' },
   { id: 'evening',     label: 'Evening wrap',      sub: 'Reflect',          icon: '🌙', go: '/ritual?mode=evening' },
   { id: 'insights',    label: 'Weekly insights',   sub: 'Trends + analytics',icon: '📈', go: '/insights' },
+  { id: 'story',       label: 'Your story',        sub: 'Growth narrative',  icon: '📖', go: '/story' },
   { id: 'journal',     label: 'Journal',           sub: 'Voice or text',    icon: '📓', go: '/journal' },
   { id: 'shop',        label: 'XP rewards shop',   sub: 'Spend XP',         icon: '🛒', go: '/shop' },
   { id: 'help',        label: 'Tips + iOS install',sub: 'Help',             icon: '?',  go: '/help' },
