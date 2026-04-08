@@ -10,6 +10,7 @@ import { LessonRecorder, putAudio } from './lib/audioStore'
 import { MicLevel } from './lib/micLevel'
 import { listen, isSTTSupported } from './lib/voice'
 import { transcribeWithWhisper } from './lib/whisper'
+import { TabAudioRecorder } from './lib/tabAudio'
 import { loadProfile } from './lib/profile'
 import { useMaya } from './context/MayaContext'
 import MayaAvatar from './components/Maya3D'
@@ -30,6 +31,8 @@ export default function MayaLesson() {
   const maya = useMaya()
   const [phase, setPhase] = useState('pick')
   const [paused, setPaused] = useState(false)
+  const [captureMode, setCaptureMode] = useState('tab') // 'tab' | 'mic'
+  const tabRecorderRef = useRef(null)
   const [askMaya, setAskMaya] = useState(false)
   const [askInput, setAskInput] = useState('')
   const [askAnswer, setAskAnswer] = useState('')
@@ -135,7 +138,31 @@ export default function MayaLesson() {
     setMicError(null)
     startedAtRef.current = Date.now()
 
-    // Pre-flight mic permission check
+    // TAB AUDIO MODE — capture a browser tab's audio directly
+    if (captureMode === 'tab') {
+      try {
+        tabRecorderRef.current = new TabAudioRecorder()
+        await tabRecorderRef.current.start()
+      } catch (e) {
+        setMicError(e.message || 'Tab audio capture failed')
+        maya.speakText("Tab capture failed. Check the picker instructions.")
+        return
+      }
+      setPhase('live')
+      maya.setLiveLesson?.({ subject, startedAt: new Date().toISOString() })
+      timerRef.current = setInterval(() => {
+        const secs = Math.floor((Date.now() - startedAtRef.current) / 1000)
+        setElapsed(secs)
+        const min = Math.floor(secs / 60)
+        if (min > 0 && min % 12 === 0 && lastNudgeRef.current !== min) {
+          lastNudgeRef.current = min
+          maya.speakText('Still locked in? You got this.')
+        }
+      }, 1000)
+      return
+    }
+
+    // MIC MODE — original path
     try {
       const probe = await navigator.mediaDevices.getUserMedia({ audio: true })
       probe.getTracks().forEach(t => t.stop())
@@ -147,7 +174,6 @@ export default function MayaLesson() {
 
     setPhase('live')
 
-    // Start mic level monitoring
     try {
       micLevelRef.current = new MicLevel()
       await micLevelRef.current.start((lvl) => setMicLevel(lvl))
@@ -155,7 +181,6 @@ export default function MayaLesson() {
       console.warn('Mic level meter failed:', e)
     }
 
-    // Kick off audio recording in parallel (IndexedDB)
     try {
       recorderRef.current = new LessonRecorder()
       await recorderRef.current.start()
@@ -194,38 +219,79 @@ export default function MayaLesson() {
     if (timerRef.current) clearInterval(timerRef.current)
     micLevelRef.current?.stop()
     micLevelRef.current = null
-    const result = stopLessonCapture()
 
-    // Stop + persist recording, capture blob for Whisper
-    let audioId = null
+    // Handle tab audio OR mic audio
     let audioBlob = null
-    if (recorderRef.current) {
+    let result = null
+
+    if (captureMode === 'tab' && tabRecorderRef.current) {
+      // Tab audio path
       try {
-        audioBlob = await recorderRef.current.stop()
-        if (audioBlob && result?.id) {
-          audioId = result.id
-          await putAudio(audioId, audioBlob)
-        }
-      } catch (e) { console.warn('audio save failed', e) }
+        audioBlob = await tabRecorderRef.current.stop()
+      } catch (e) { console.warn('tab recorder stop failed', e) }
+      tabRecorderRef.current = null
+      // Build a synthetic result since we didn't use Web Speech
+      result = {
+        id: `lesson_${Date.now()}`,
+        subject,
+        startedAt: new Date(startedAtRef.current).toISOString(),
+        endedAt: new Date().toISOString(),
+        durationMin: Math.round((Date.now() - startedAtRef.current) / 60000),
+        fullTranscript: '',
+        wordCount: 0,
+        snippetCount: 0,
+      }
+    } else {
+      // Mic path
+      result = stopLessonCapture()
+      if (recorderRef.current) {
+        try {
+          audioBlob = await recorderRef.current.stop()
+        } catch (e) { console.warn('audio stop failed', e) }
+        recorderRef.current = null
+      }
     }
 
-    // ─── Whisper override ───
-    // If OpenAI key is set, transcribe the recorded audio blob via Whisper.
-    // This is way more reliable than Web Speech which fails silently.
+    // Persist audio blob
+    let audioId = null
+    if (audioBlob && result?.id) {
+      audioId = result.id
+      try { await putAudio(audioId, audioBlob) } catch (e) { console.warn('audio save failed', e) }
+    }
+
+    // ─── Whisper transcription ───
+    // Tab mode: REQUIRED (no live transcript).
+    // Mic mode: optional override of Web Speech.
     const profile = loadProfile()
     let whisperTranscript = null
-    if (profile?.openaiApiKey && audioBlob && audioBlob.size > 1000) {
-      try {
-        setPhase('transcribing')
-        maya.speakText('Transcribing the lesson with Whisper. One sec.')
-        whisperTranscript = await transcribeWithWhisper(audioBlob, profile.openaiApiKey, {
-          prompt: `This is a ${subject} lesson for a 12-year-old student.`,
-          language: 'en',
-        })
-        console.log('[Whisper] transcribed', whisperTranscript.length, 'chars')
-      } catch (e) {
-        console.error('Whisper failed:', e)
-        setMicError(`Whisper failed: ${e.message}. Falling back to Web Speech transcript.`)
+    if (audioBlob && audioBlob.size > 1000) {
+      if (!profile?.openaiApiKey) {
+        if (captureMode === 'tab') {
+          setPhase('pick')
+          maya.setLiveLesson?.(null)
+          setMicError('Tab mode needs an OpenAI API key to transcribe. Add one in Profile.')
+          maya.speakText('I need an OpenAI key to transcribe the tab audio.')
+          return
+        }
+      } else {
+        try {
+          setPhase('transcribing')
+          maya.speakText('Transcribing the lesson with Whisper. One sec.')
+          whisperTranscript = await transcribeWithWhisper(audioBlob, profile.openaiApiKey, {
+            prompt: `This is a ${subject} lesson for a 12-year-old student.`,
+            language: 'en',
+          })
+          console.log('[Whisper] transcribed', whisperTranscript.length, 'chars')
+        } catch (e) {
+          console.error('Whisper failed:', e)
+          setMicError(`Whisper failed: ${e.message}`)
+          if (captureMode === 'tab') {
+            setPhase('pick')
+            maya.setLiveLesson?.(null)
+            maya.speakText('Whisper failed. Check your OpenAI key and billing.')
+            return
+          }
+        }
       }
     }
 
@@ -484,11 +550,52 @@ export default function MayaLesson() {
                 ))}
               </div>
             </Section>
+            {/* Capture mode selector */}
+            <Section title="How should I listen?">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button
+                  onClick={() => setCaptureMode('tab')}
+                  style={{
+                    padding: '14px 16px', textAlign: 'left',
+                    background: captureMode === 'tab' ? C.teal + '15' : C.surface,
+                    border: `2px solid ${captureMode === 'tab' ? C.teal : C.border}`,
+                    borderRadius: 12, cursor: 'pointer', fontFamily: C.mono,
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: captureMode === 'tab' ? C.teal : C.text, fontWeight: 700 }}>
+                    🖥 Capture browser tab audio ⭐
+                  </div>
+                  <div style={{ fontSize: 10, color: C.muted, marginTop: 3, lineHeight: 1.5 }}>
+                    Best for lessons playing on this computer. I'll grab the audio straight from your tab — no mic needed. Works with YouTube, Zoom, Google Meet, etc.
+                  </div>
+                </button>
+                <button
+                  onClick={() => setCaptureMode('mic')}
+                  style={{
+                    padding: '14px 16px', textAlign: 'left',
+                    background: captureMode === 'mic' ? C.teal + '15' : C.surface,
+                    border: `2px solid ${captureMode === 'mic' ? C.teal : C.border}`,
+                    borderRadius: 12, cursor: 'pointer', fontFamily: C.mono,
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: captureMode === 'mic' ? C.teal : C.text, fontWeight: 700 }}>
+                    🎤 Microphone
+                  </div>
+                  <div style={{ fontSize: 10, color: C.muted, marginTop: 3, lineHeight: 1.5 }}>
+                    Best for in-person teaching or lessons on a different device. I'll listen through this device's mic.
+                  </div>
+                </button>
+              </div>
+            </Section>
+
             <div style={{ padding: 12, background: C.surfaceLight, borderRadius: 10, marginBottom: 12, fontSize: 11, color: C.muted, lineHeight: 1.5 }}>
-              💡 Put me near the speaker so I can hear the teacher clearly. I'll check in on you every 12 min.
+              {captureMode === 'tab'
+                ? '💡 When you tap Start Lesson, a browser picker will open. Pick "Chrome Tab" → pick the lesson tab → ✅ CHECK "Share tab audio" → Share.'
+                : '💡 Put me near the speaker so I can hear the teacher clearly. I\'ll check in on you every 12 min.'}
             </div>
 
-            {/* Mic test */}
+            {/* Mic test — only shown in mic mode */}
+            {captureMode === 'mic' && (
             <div style={{
               padding: 14, background: C.surface, borderRadius: 12,
               border: `1px solid ${C.border}`, marginBottom: 12,
@@ -565,6 +672,18 @@ export default function MayaLesson() {
                 </div>
               </div>
             </div>
+            )}
+
+            {/* Whisper key warning for tab mode */}
+            {captureMode === 'tab' && !loadProfile().openaiApiKey && (
+              <div style={{
+                padding: 12, background: C.amber + '11',
+                border: `1px solid ${C.amber}55`, borderRadius: 10,
+                marginBottom: 12, fontSize: 11, color: C.amber, lineHeight: 1.5,
+              }}>
+                ⚠️ Tab audio needs <b>OpenAI Whisper</b> to transcribe. Add your OpenAI API key in Profile first, or switch to Microphone mode.
+              </div>
+            )}
 
             <button onClick={start} style={primary}>🎙 Start Lesson</button>
           </>
@@ -594,14 +713,24 @@ export default function MayaLesson() {
               <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>
                 {transcript.split(/\s+/).filter(Boolean).length} words captured
               </div>
-              <div style={{ marginTop: 10 }}>
-                <MicMeter level={micLevel} compact />
-                <div style={{ fontSize: 9, color: micLevel < 5 ? C.red : C.muted, marginTop: 4 }}>
-                  {micLevel < 5
-                    ? '⚠️ Mic silent — check volume / move closer'
-                    : `Mic level: ${micLevel}%`}
+              {captureMode === 'mic' && (
+                <div style={{ marginTop: 10 }}>
+                  <MicMeter level={micLevel} compact />
+                  <div style={{ fontSize: 9, color: micLevel < 5 ? C.red : C.muted, marginTop: 4 }}>
+                    {micLevel < 5
+                      ? '⚠️ Mic silent — check volume / move closer'
+                      : `Mic level: ${micLevel}%`}
+                  </div>
                 </div>
-              </div>
+              )}
+              {captureMode === 'tab' && (
+                <div style={{
+                  marginTop: 10, padding: 8, background: C.teal + '11',
+                  borderRadius: 6, fontSize: 10, color: C.teal, textAlign: 'center',
+                }}>
+                  🖥 Capturing tab audio — no mic needed
+                </div>
+              )}
             </div>
 
             <div style={{
