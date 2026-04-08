@@ -193,6 +193,22 @@ export default function MayaProfile() {
           </Row>
         </Section>
 
+        <Section title="Lesson Transcription (Whisper) ⭐">
+          <p style={{ fontSize: 10, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
+            <b>Critical for lessons.</b> Web Speech API is broken on most browsers. OpenAI Whisper transcribes every recorded lesson reliably (~$0.006/min).
+            <br/>Get a key at platform.openai.com → API keys.
+          </p>
+          <Row label="OpenAI API Key">
+            <input
+              style={input}
+              type="password"
+              value={profile.openaiApiKey || ''}
+              onChange={e => update({ openaiApiKey: e.target.value })}
+              placeholder="sk-..."
+            />
+          </Row>
+        </Section>
+
         <Section title="Notifications">
           <Row label="Browser nudges">
             <Toggle

@@ -28,6 +28,7 @@ const DEFAULT_PROFILE = {
   elevenLabsApiKey: '',        // ElevenLabs API key for premium TTS
   elevenLabsVoiceId: '',       // chosen ElevenLabs voice id
   anthropicApiKey: '',         // Claude API key — unlocks real Maya intelligence
+  openaiApiKey: '',            // OpenAI API key — unlocks Whisper for reliable lesson transcription
   notificationsEnabled: false, // Web Notifications opt-in
   wakeWordEnabled: false,      // "hey maya" always-listen
   avatarStyle: 'pixar',

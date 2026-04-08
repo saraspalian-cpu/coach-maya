@@ -9,6 +9,8 @@ import { gradeQuiz } from './agents/quizGrader'
 import { LessonRecorder, putAudio } from './lib/audioStore'
 import { MicLevel } from './lib/micLevel'
 import { listen, isSTTSupported } from './lib/voice'
+import { transcribeWithWhisper } from './lib/whisper'
+import { loadProfile } from './lib/profile'
 import { useMaya } from './context/MayaContext'
 import MayaAvatar from './components/Maya3D'
 
@@ -194,24 +196,53 @@ export default function MayaLesson() {
     micLevelRef.current = null
     const result = stopLessonCapture()
 
-    // Stop + persist recording
+    // Stop + persist recording, capture blob for Whisper
     let audioId = null
+    let audioBlob = null
     if (recorderRef.current) {
       try {
-        const blob = await recorderRef.current.stop()
-        if (blob && result?.id) {
+        audioBlob = await recorderRef.current.stop()
+        if (audioBlob && result?.id) {
           audioId = result.id
-          await putAudio(audioId, blob)
+          await putAudio(audioId, audioBlob)
         }
       } catch (e) { console.warn('audio save failed', e) }
+    }
+
+    // ─── Whisper override ───
+    // If OpenAI key is set, transcribe the recorded audio blob via Whisper.
+    // This is way more reliable than Web Speech which fails silently.
+    const profile = loadProfile()
+    let whisperTranscript = null
+    if (profile?.openaiApiKey && audioBlob && audioBlob.size > 1000) {
+      try {
+        setPhase('transcribing')
+        maya.speakText('Transcribing the lesson with Whisper. One sec.')
+        whisperTranscript = await transcribeWithWhisper(audioBlob, profile.openaiApiKey, {
+          prompt: `This is a ${subject} lesson for a 12-year-old student.`,
+          language: 'en',
+        })
+        console.log('[Whisper] transcribed', whisperTranscript.length, 'chars')
+      } catch (e) {
+        console.error('Whisper failed:', e)
+        setMicError(`Whisper failed: ${e.message}. Falling back to Web Speech transcript.`)
+      }
+    }
+
+    // Use Whisper transcript if available, else fall back to Web Speech
+    if (result && whisperTranscript) {
+      result.fullTranscript = whisperTranscript
+      result.wordCount = whisperTranscript.split(/\s+/).filter(Boolean).length
     }
 
     if (!result || !result.fullTranscript || result.wordCount < 3) {
       setPhase('pick')
       maya.setLiveLesson?.(null)
       const msg = !result?.fullTranscript
-        ? "I caught zero audio. Use the Test mic button — your mic is probably not picking up sound."
-        : `Only caught ${result.wordCount} words. Move closer to the speaker, turn up the volume, or test the mic before starting.`
+        ? (profile?.openaiApiKey
+          ? "I caught zero audio even with Whisper. The mic isn't picking up sound at all."
+          : "I caught zero audio. Add an OpenAI API key in Profile for reliable Whisper transcription, or check your mic.")
+        : `Only caught ${result.wordCount} words. ${profile?.openaiApiKey ? 'Try moving closer to the speaker.' : 'Add an OpenAI key in Profile for Whisper — way more reliable.'}`
       setMicError(msg)
       maya.speakText(msg)
       return
@@ -705,6 +736,19 @@ export default function MayaLesson() {
             ))}
             <button onClick={submitQuiz} style={primary}>Submit & Earn XP</button>
           </>
+        )}
+
+        {/* TRANSCRIBING PHASE */}
+        {phase === 'transcribing' && (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <MayaAvatar state="thinking" size={220} />
+            <div style={{ fontFamily: C.display, fontSize: 28, color: C.teal, marginTop: 12, letterSpacing: 1.5 }}>
+              TRANSCRIBING...
+            </div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
+              Whisper is reading every word. ~10-30 sec.
+            </div>
+          </div>
         )}
 
         {/* GRADING PHASE */}
