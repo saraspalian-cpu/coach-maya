@@ -30,13 +30,16 @@ function startLessonCapture({ subject, onInterim, onFinal, onError } = {}) {
     stop: null,
     stopped: false,
     paused: false,
+    restartCount: 0,
   }
 
-  // Auto-restarting recognition loop (Web Speech stops on silence)
+  // Auto-restarting recognition loop (Web Speech stops on silence/restarts crash)
   const restart = () => {
     if (!session || session.stopped || session.paused) return
+    session.restartCount++
     try {
       session.stop = listen({
+        continuous: true,
         onResult: (text, isFinal) => {
           if (isFinal && text) {
             session.transcript.push(text)
@@ -45,10 +48,23 @@ function startLessonCapture({ subject, onInterim, onFinal, onError } = {}) {
             onInterim?.(text)
           }
         },
-        onError: (e) => onError?.(e),
-        onEnd: () => setTimeout(restart, 200),
+        onError: (e) => {
+          console.warn('lesson recognition error:', e?.error || e)
+          onError?.(e)
+        },
+        onEnd: () => {
+          // Auto-restart after a tiny delay
+          if (session && !session.stopped && !session.paused) {
+            setTimeout(restart, 250)
+          }
+        },
       })
-    } catch (e) { onError?.(e) }
+    } catch (e) {
+      console.warn('lesson recognition start failed:', e)
+      onError?.(e)
+      // Try again after short delay
+      if (session && !session.stopped) setTimeout(restart, 500)
+    }
   }
   restart()
 

@@ -181,10 +181,14 @@ export default function MayaLesson() {
       } catch (e) { console.warn('audio save failed', e) }
     }
 
-    if (!result || !result.fullTranscript || result.wordCount < 10) {
+    if (!result || !result.fullTranscript || result.wordCount < 3) {
       setPhase('pick')
       maya.setLiveLesson?.(null)
-      maya.speakText("I didn't catch enough audio. Try moving closer to the speaker.")
+      const msg = !result?.fullTranscript
+        ? "I caught zero audio. Use the Test mic button — your mic is probably not picking up sound."
+        : `Only caught ${result.wordCount} words. Move closer to the speaker, turn up the volume, or test the mic before starting.`
+      setMicError(msg)
+      maya.speakText(msg)
       return
     }
     result.audioId = audioId

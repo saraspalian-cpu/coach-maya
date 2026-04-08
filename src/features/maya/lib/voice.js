@@ -175,30 +175,27 @@ function isSpeaking() {
 }
 
 // ─── STT: Maya Listening ───
-let recognition = null
-
-function getRecognition() {
-  if (recognition) return recognition
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-  if (!SR) return null
-  recognition = new SR()
-  recognition.continuous = false
-  recognition.interimResults = true
-  recognition.lang = 'en-US'
-  return recognition
-}
-
 function isSTTSupported() {
   return !!(window.SpeechRecognition || window.webkitSpeechRecognition)
 }
 
 /**
  * Start listening. Returns a stop() function.
- * onResult(transcript, isFinal)
+ * Creates a FRESH recognition instance every call so the auto-restart loop
+ * doesn't reuse a dead object.
  */
-function listen({ onStart, onResult, onEnd, onError } = {}) {
-  const r = getRecognition()
-  if (!r) { onError?.(new Error('SpeechRecognition not supported')); return () => {} }
+function listen({ onStart, onResult, onEnd, onError, continuous = false } = {}) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SR) {
+    onError?.(new Error('SpeechRecognition not supported'))
+    return () => {}
+  }
+
+  const r = new SR()
+  r.continuous = continuous
+  r.interimResults = true
+  r.lang = 'en-US'
+  r.maxAlternatives = 1
 
   let stopped = false
 
@@ -213,13 +210,21 @@ function listen({ onStart, onResult, onEnd, onError } = {}) {
     onResult?.(transcript.trim(), isFinal)
   }
   r.onend = () => { if (!stopped) onEnd?.() }
-  r.onerror = (e) => onError?.(e)
+  r.onerror = (e) => {
+    // Surface real errors. 'no-speech' means silence — let onEnd handle restart.
+    if (e.error && e.error !== 'no-speech' && e.error !== 'aborted') {
+      onError?.(e)
+    } else {
+      onEnd?.()
+    }
+  }
 
   try { r.start() } catch (e) { onError?.(e) }
 
   return () => {
     stopped = true
     try { r.stop() } catch {}
+    try { r.abort() } catch {}
   }
 }
 
