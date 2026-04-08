@@ -8,6 +8,7 @@ import { addConceptsFromLesson } from './agents/memory'
 import { gradeQuiz } from './agents/quizGrader'
 import { LessonRecorder, putAudio } from './lib/audioStore'
 import { MicLevel } from './lib/micLevel'
+import { listen, isSTTSupported } from './lib/voice'
 import { useMaya } from './context/MayaContext'
 import MayaAvatar from './components/Maya3D'
 
@@ -54,6 +55,7 @@ export default function MayaLesson() {
   const [micLevel, setMicLevel] = useState(0)
   const [micError, setMicError] = useState(null)
   const [micTesting, setMicTesting] = useState(false)
+  const [sttTest, setSttTest] = useState({ active: false, transcript: '', error: '' })
 
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -98,6 +100,29 @@ export default function MayaLesson() {
     micLevelRef.current = null
     setMicTesting(false)
     setMicLevel(0)
+  }
+
+  // ─── Speech Recognition test (separate from mic level) ───
+  const testSpeech = () => {
+    if (!isSTTSupported()) {
+      setSttTest({ active: false, transcript: '', error: 'SpeechRecognition not supported in this browser. Use Chrome desktop.' })
+      return
+    }
+    setSttTest({ active: true, transcript: '', error: '' })
+    const stop = listen({
+      continuous: true,
+      onResult: (text, isFinal) => {
+        setSttTest(s => ({ ...s, transcript: text }))
+      },
+      onError: (e) => {
+        setSttTest(s => ({ ...s, active: false, error: e?.error || e?.message || 'Unknown error' }))
+      },
+      onEnd: () => {
+        setSttTest(s => ({ ...s, active: false }))
+      },
+    })
+    // Auto-stop after 8 seconds
+    setTimeout(() => { try { stop?.() } catch {} }, 8000)
   }
 
   // ─── Phase: live capture ───
@@ -468,6 +493,46 @@ export default function MayaLesson() {
                   {micError}
                 </div>
               )}
+
+              {/* Speech recognition test */}
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <div style={{ fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: 1 }}>
+                    Speech recognition test
+                  </div>
+                  <button
+                    onClick={testSpeech}
+                    disabled={sttTest.active}
+                    style={{
+                      padding: '5px 10px', background: sttTest.active ? C.amber : C.teal,
+                      border: 'none', borderRadius: 6,
+                      color: C.bg, fontSize: 10, fontFamily: C.mono,
+                      fontWeight: 700, cursor: sttTest.active ? 'wait' : 'pointer',
+                    }}
+                  >{sttTest.active ? 'Listening 8s...' : '▶ Test STT'}</button>
+                </div>
+                {sttTest.transcript && (
+                  <div style={{
+                    padding: 8, background: '#22C55E11',
+                    border: `1px solid #22C55E44`, borderRadius: 6,
+                    fontSize: 11, color: C.text, lineHeight: 1.4,
+                  }}>
+                    ✓ Heard: "{sttTest.transcript}"
+                  </div>
+                )}
+                {sttTest.error && (
+                  <div style={{
+                    padding: 8, background: C.red + '11',
+                    border: `1px solid ${C.red}44`, borderRadius: 6,
+                    fontSize: 10, color: C.red, fontFamily: 'monospace',
+                  }}>
+                    ❌ {sttTest.error}
+                  </div>
+                )}
+                <div style={{ fontSize: 9, color: C.muted, marginTop: 4 }}>
+                  Tests if your browser actually transcribes audio. Speak after tapping.
+                </div>
+              </div>
             </div>
 
             <button onClick={start} style={primary}>🎙 Start Lesson</button>
