@@ -7,6 +7,7 @@ import {
 import { addConceptsFromLesson } from './agents/memory'
 import { gradeQuiz } from './agents/quizGrader'
 import { LessonRecorder, putAudio } from './lib/audioStore'
+import { MicLevel } from './lib/micLevel'
 import { useMaya } from './context/MayaContext'
 import MayaAvatar from './components/Maya3D'
 
@@ -49,6 +50,10 @@ export default function MayaLesson() {
   const timerRef = useRef(null)
   const lastNudgeRef = useRef(0)
   const recorderRef = useRef(null)
+  const micLevelRef = useRef(null)
+  const [micLevel, setMicLevel] = useState(0)
+  const [micError, setMicError] = useState(null)
+  const [micTesting, setMicTesting] = useState(false)
 
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -75,13 +80,53 @@ export default function MayaLesson() {
     setDraft(null)
   }
 
+  // ─── Mic test (pre-flight) ───
+  const testMic = async () => {
+    setMicTesting(true)
+    setMicError(null)
+    try {
+      const ml = new MicLevel()
+      await ml.start((lvl) => setMicLevel(lvl))
+      micLevelRef.current = ml
+    } catch (e) {
+      setMicError(e.message || 'Mic blocked')
+      setMicTesting(false)
+    }
+  }
+  const stopMicTest = () => {
+    micLevelRef.current?.stop()
+    micLevelRef.current = null
+    setMicTesting(false)
+    setMicLevel(0)
+  }
+
   // ─── Phase: live capture ───
   const start = async () => {
     setTranscript('')
     setInterim('')
     setElapsed(0)
+    setMicError(null)
     startedAtRef.current = Date.now()
+
+    // Pre-flight mic permission check
+    try {
+      const probe = await navigator.mediaDevices.getUserMedia({ audio: true })
+      probe.getTracks().forEach(t => t.stop())
+    } catch (e) {
+      setMicError('Mic permission denied. Click the lock icon in your browser address bar to allow microphone access, then try again.')
+      maya.speakText("I can't access the microphone. Check the browser permissions.")
+      return
+    }
+
     setPhase('live')
+
+    // Start mic level monitoring
+    try {
+      micLevelRef.current = new MicLevel()
+      await micLevelRef.current.start((lvl) => setMicLevel(lvl))
+    } catch (e) {
+      console.warn('Mic level meter failed:', e)
+    }
 
     // Kick off audio recording in parallel (IndexedDB)
     try {
@@ -120,6 +165,8 @@ export default function MayaLesson() {
 
   const stop = async () => {
     if (timerRef.current) clearInterval(timerRef.current)
+    micLevelRef.current?.stop()
+    micLevelRef.current = null
     const result = stopLessonCapture()
 
     // Stop + persist recording
@@ -377,9 +424,48 @@ export default function MayaLesson() {
                 ))}
               </div>
             </Section>
-            <div style={{ padding: 12, background: C.surfaceLight, borderRadius: 10, marginBottom: 16, fontSize: 11, color: C.muted, lineHeight: 1.5 }}>
+            <div style={{ padding: 12, background: C.surfaceLight, borderRadius: 10, marginBottom: 12, fontSize: 11, color: C.muted, lineHeight: 1.5 }}>
               💡 Put me near the speaker so I can hear the teacher clearly. I'll check in on you every 12 min.
             </div>
+
+            {/* Mic test */}
+            <div style={{
+              padding: 14, background: C.surface, borderRadius: 12,
+              border: `1px solid ${C.border}`, marginBottom: 12,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontSize: 10, color: C.teal, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  Test microphone first
+                </div>
+                <button
+                  onClick={micTesting ? stopMicTest : testMic}
+                  style={{
+                    padding: '6px 12px',
+                    background: micTesting ? C.red : C.teal + '22',
+                    border: `1px solid ${micTesting ? C.red : C.teal}`,
+                    borderRadius: 6,
+                    color: micTesting ? '#fff' : C.teal,
+                    fontSize: 10, fontFamily: C.mono, cursor: 'pointer',
+                  }}
+                >{micTesting ? 'Stop' : '🎤 Test'}</button>
+              </div>
+              <MicMeter level={micLevel} />
+              <div style={{ fontSize: 10, color: C.muted, marginTop: 6 }}>
+                {micTesting
+                  ? micLevel < 5
+                    ? '⚠️ Mic too quiet — speak up or move closer to the speaker'
+                    : micLevel < 25
+                      ? '✓ Mic working but quiet'
+                      : '✓ Mic loud and clear — ready to go'
+                  : 'Tap test, then say something or play your lesson audio'}
+              </div>
+              {micError && (
+                <div style={{ marginTop: 8, padding: 8, background: C.red + '11', border: `1px solid ${C.red}44`, borderRadius: 6, fontSize: 10, color: C.red }}>
+                  {micError}
+                </div>
+              )}
+            </div>
+
             <button onClick={start} style={primary}>🎙 Start Lesson</button>
           </>
         )}
@@ -407,6 +493,14 @@ export default function MayaLesson() {
               </div>
               <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>
                 {transcript.split(/\s+/).filter(Boolean).length} words captured
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <MicMeter level={micLevel} compact />
+                <div style={{ fontSize: 9, color: micLevel < 5 ? C.red : C.muted, marginTop: 4 }}>
+                  {micLevel < 5
+                    ? '⚠️ Mic silent — check volume / move closer'
+                    : `Mic level: ${micLevel}%`}
+                </div>
               </div>
             </div>
 
@@ -638,6 +732,28 @@ function Stats({ lesson }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function MicMeter({ level, compact }) {
+  const color = level >= 25 ? '#22C55E' : level >= 5 ? '#FFA500' : '#EF4444'
+  return (
+    <div style={{
+      width: '100%',
+      height: compact ? 6 : 10,
+      background: '#1a2a3e',
+      borderRadius: 5,
+      overflow: 'hidden',
+      position: 'relative',
+    }}>
+      <div style={{
+        height: '100%',
+        width: `${level}%`,
+        background: `linear-gradient(90deg, ${color}, ${color}cc)`,
+        transition: 'width 80ms linear',
+        boxShadow: level > 5 ? `0 0 8px ${color}66` : 'none',
+      }} />
     </div>
   )
 }
