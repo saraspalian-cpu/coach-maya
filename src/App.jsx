@@ -28,6 +28,7 @@ const MayaInsights = lazy(() => import('./features/maya/MayaInsights'))
 const MayaJournal = lazy(() => import('./features/maya/MayaJournal'))
 const MayaStory = lazy(() => import('./features/maya/MayaStory'))
 const MayaFocus = lazy(() => import('./features/maya/MayaFocus'))
+const MayaNews = lazy(() => import('./features/maya/MayaNews'))
 
 function Loading() {
   return (
@@ -84,6 +85,7 @@ function GatedRoutes() {
           <Route path="/journal" element={<MayaJournal />} />
           <Route path="/story" element={<MayaStory />} />
           <Route path="/focus" element={<MayaFocus />} />
+          <Route path="/news" element={<MayaNews />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

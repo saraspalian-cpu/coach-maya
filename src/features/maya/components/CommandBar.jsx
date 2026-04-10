@@ -24,6 +24,7 @@ const NAV_ACTIONS = [
   { id: 'profile',     label: 'Profile + voice',   sub: 'Settings',         icon: '👤', go: '/profile' },
   { id: 'parent',      label: 'Parent report',     sub: 'Daily intelligence',icon: '📊', go: '/parent' },
   { id: 'schedule',    label: 'Edit schedule',     sub: 'Tasks',            icon: '⚙', go: '/schedule' },
+  { id: 'news',        label: 'News feed',         sub: 'Tech + Tennis',    icon: '📰', go: '/news' },
   { id: 'focus',       label: 'Focus mode',        sub: 'Pomodoro timer',   icon: '⏱', go: '/focus' },
   { id: 'morning',     label: 'Morning ritual',    sub: 'Set the day',      icon: '☀️', go: '/ritual?mode=morning' },
   { id: 'evening',     label: 'Evening wrap',      sub: 'Reflect',          icon: '🌙', go: '/ritual?mode=evening' },

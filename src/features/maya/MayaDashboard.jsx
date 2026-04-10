@@ -602,6 +602,7 @@ function NavRow({ navigate }) {
     { icon: '🎙', label: 'Vault', to: '/lessons' },
     { icon: '🧠', label: 'Memory', to: '/memory' },
     { icon: '🎯', label: 'Goals', to: '/goals' },
+    { icon: '📰', label: 'News', to: '/news' },
     { icon: '⏱', label: 'Focus', to: '/focus' },
     { icon: '📈', label: 'Insights', to: '/insights' },
     { icon: '📖', label: 'Story', to: '/story' },
