@@ -5,6 +5,7 @@ import {
   generateQuiz, extractKeyPoints, extractConcepts, saveLesson,
 } from './agents/lessonAnalyst'
 import { addConceptsFromLesson } from './agents/memory'
+import { generateStudyGuide } from './agents/studyGuide'
 import { gradeQuiz } from './agents/quizGrader'
 import { LessonRecorder, putAudio } from './lib/audioStore'
 import { MicLevel } from './lib/micLevel'
@@ -52,6 +53,8 @@ export default function MayaLesson() {
   const [answers, setAnswers] = useState({})
   const [lessonResult, setLessonResult] = useState(null)
   const [grading, setGrading] = useState(null)
+  const [studyGuide, setStudyGuide] = useState(null)
+  const [guideLoading, setGuideLoading] = useState(false)
   const startedAtRef = useRef(null)
   const timerRef = useRef(null)
   const lastNudgeRef = useRef(0)
@@ -331,11 +334,40 @@ export default function MayaLesson() {
     }, 400)
   }
 
+  const buildStudyGuide = async () => {
+    setGuideLoading(true)
+    try {
+      const guide = await generateStudyGuide(lessonResult.fullTranscript, subject)
+      setStudyGuide(guide)
+    } catch (e) {
+      console.warn('Study guide failed:', e)
+    }
+    setGuideLoading(false)
+    setPhase('study')
+  }
+
   const startQuiz = () => {
     const q = generateQuiz(lessonResult.fullTranscript, subject)
     setQuiz(q)
     setAnswers({})
     setPhase('quiz')
+  }
+
+  const copyForNotebookLM = async () => {
+    const text = [
+      `# ${subject} Lesson Transcript`,
+      `Date: ${new Date(lessonResult.startedAt).toLocaleString()}`,
+      `Duration: ${lessonResult.durationMin} min`,
+      '',
+      lessonResult.fullTranscript,
+    ].join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+      window.open('https://notebooklm.google.com/', '_blank')
+    } catch {
+      // Fallback
+      window.open('https://notebooklm.google.com/', '_blank')
+    }
   }
 
   const submitQuiz = async () => {
@@ -831,8 +863,94 @@ export default function MayaLesson() {
               </div>
             )}
 
-            <button onClick={startQuiz} style={primary}>Lock it in — start quiz</button>
-            <button onClick={() => { navigate('/') }} style={secondary}>Skip quiz</button>
+            <button onClick={buildStudyGuide} disabled={guideLoading} style={primary}>
+              {guideLoading ? 'Generating study guide...' : '📚 Study Guide + Quiz'}
+            </button>
+            <button onClick={copyForNotebookLM} style={{
+              ...secondary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              📋 Copy to NotebookLM
+            </button>
+            <button onClick={startQuiz} style={secondary}>Skip guide — straight to quiz</button>
+          </>
+        )}
+
+        {/* STUDY GUIDE PHASE */}
+        {phase === 'study' && studyGuide && (
+          <>
+            <div style={{ fontSize: 11, color: C.teal, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+              Study Guide · {subject}
+            </div>
+
+            {/* Maya's note */}
+            {studyGuide.mayaNote && (
+              <div style={{
+                padding: 14, background: C.surfaceLight, borderRadius: 12,
+                borderLeft: `3px solid ${C.teal}`, marginBottom: 12,
+                fontSize: 13, color: C.text, lineHeight: 1.5,
+              }}>{studyGuide.mayaNote}</div>
+            )}
+
+            {/* Summary */}
+            <Card title="Summary" color={C.teal}>
+              <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6 }}>{studyGuide.summary}</div>
+            </Card>
+
+            {/* Key concepts */}
+            {studyGuide.keyConcepts?.length > 0 && (
+              <Card title="Key concepts" color={C.gold}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {studyGuide.keyConcepts.map((c, i) => (
+                    <span key={i} style={{
+                      padding: '5px 10px', borderRadius: 999,
+                      background: C.gold + '22', border: `1px solid ${C.gold}44`,
+                      fontSize: 11, color: C.gold,
+                    }}>{c}</span>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Study questions */}
+            {studyGuide.studyQuestions?.length > 0 && (
+              <Card title="Study questions">
+                {studyGuide.studyQuestions.map((q, i) => (
+                  <div key={i} style={{
+                    padding: '8px 0',
+                    borderBottom: i < studyGuide.studyQuestions.length - 1 ? `1px solid ${C.border}` : 'none',
+                  }}>
+                    <span style={{
+                      fontSize: 9, color: q.type === 'recall' ? C.green : q.type === 'understand' ? C.teal : C.amber,
+                      textTransform: 'uppercase', letterSpacing: 1, marginRight: 6,
+                    }}>{q.type}</span>
+                    <span style={{ fontSize: 12, color: C.text }}>{q.q}</span>
+                  </div>
+                ))}
+              </Card>
+            )}
+
+            {/* Common mistakes */}
+            {studyGuide.commonMistakes?.length > 0 && (
+              <Card title="Watch out for" color={C.red}>
+                {studyGuide.commonMistakes.map((m, i) => (
+                  <div key={i} style={{ fontSize: 12, color: C.text, padding: '4px 0', lineHeight: 1.5 }}>
+                    ⚠️ {m}
+                  </div>
+                ))}
+              </Card>
+            )}
+
+            {/* Explain challenge */}
+            {studyGuide.explainChallenge && (
+              <Card title="30-second challenge" color={C.amber}>
+                <div style={{ fontSize: 12, color: C.text, lineHeight: 1.5 }}>{studyGuide.explainChallenge}</div>
+              </Card>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button onClick={startQuiz} style={primary}>Take the quiz</button>
+              <button onClick={copyForNotebookLM} style={secondary}>📋 NotebookLM</button>
+            </div>
           </>
         )}
 
@@ -974,6 +1092,21 @@ function Stats({ lesson }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function Card({ title, color, children }) {
+  return (
+    <div style={{
+      padding: 14, background: C.surface, borderRadius: 12,
+      border: `1px solid ${C.border}`, marginBottom: 10,
+      borderLeft: color ? `3px solid ${color}` : `1px solid ${C.border}`,
+    }}>
+      <div style={{ fontSize: 9, color: color || C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+        {title}
+      </div>
+      {children}
     </div>
   )
 }
