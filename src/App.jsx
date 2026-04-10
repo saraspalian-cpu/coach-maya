@@ -37,6 +37,8 @@ const MayaScreenTime = lazy(() => import('./features/maya/MayaScreenTime'))
 const MayaPiano = lazy(() => import('./features/maya/MayaPiano'))
 const MayaRecords = lazy(() => import('./features/maya/MayaRecords'))
 const MayaVocab = lazy(() => import('./features/maya/MayaVocab'))
+const MayaExplain = lazy(() => import('./features/maya/MayaExplain'))
+const MayaTimer = lazy(() => import('./features/maya/MayaTimer'))
 
 function Loading() {
   return (
@@ -102,6 +104,8 @@ function GatedRoutes() {
           <Route path="/piano" element={<MayaPiano />} />
           <Route path="/records" element={<MayaRecords />} />
           <Route path="/vocab" element={<MayaVocab />} />
+          <Route path="/explain" element={<MayaExplain />} />
+          <Route path="/timer" element={<MayaTimer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

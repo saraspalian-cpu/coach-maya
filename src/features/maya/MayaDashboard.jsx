@@ -693,6 +693,8 @@ function NavRow({ navigate }) {
     { icon: '🎾', label: 'Tennis', to: '/tennis' },
     { icon: '🎹', label: 'Piano', to: '/piano' },
     { icon: '📖', label: 'Reading', to: '/reading' },
+    { icon: '💡', label: 'Explain', to: '/explain' },
+    { icon: '⏲', label: 'Timer', to: '/timer' },
     { icon: '📱', label: 'Screen', to: '/screentime' },
     { icon: '📝', label: 'Vocab', to: '/vocab' },
     { icon: '🏅', label: 'Records', to: '/records' },
