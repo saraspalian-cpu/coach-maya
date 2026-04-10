@@ -7,6 +7,7 @@ import { getMemoryStats } from './agents/memory'
 import { weeklyInsights } from './agents/insights'
 import { getSuggestion } from './agents/suggestions'
 import { getActiveChallenge } from './agents/challenges'
+import { getDailyFact, getDailyRiddle, getDailyQuote } from './agents/dailyContent'
 
 // Lazy load 3D avatar (Three.js is ~800KB)
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
@@ -240,6 +241,9 @@ export default function MayaDashboard({ onOpenSearch }) {
 
       {/* ─── Weekly Challenge ─── */}
       <WeeklyChallenge />
+
+      {/* ─── Daily content ─── */}
+      <DailyContent />
 
       {/* ─── Smart suggestion ─── */}
       <SuggestionCard navigate={navigate} maya={maya} />
@@ -601,6 +605,52 @@ function MayaMessageBubble({ message }) {
   )
 }
 
+function DailyContent() {
+  const fact = useMemo(() => getDailyFact(), [])
+  const riddle = useMemo(() => getDailyRiddle(), [])
+  const quote = useMemo(() => getDailyQuote(), [])
+  const [showAnswer, setShowAnswer] = useState(false)
+
+  return (
+    <div style={{
+      padding: '10px 16px 14px',
+      borderBottom: `1px solid ${C.border}`,
+      background: C.surface,
+    }}>
+      {/* Quote */}
+      <div style={{ fontSize: 12, color: C.text, fontStyle: 'italic', lineHeight: 1.5, marginBottom: 6 }}>
+        "{quote.text}"
+      </div>
+      <div style={{ fontSize: 9, color: C.muted, marginBottom: 10 }}>— {quote.by}</div>
+
+      {/* Fun fact */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 8 }}>
+        <span style={{ fontSize: 18 }}>{fact.icon}</span>
+        <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.5, flex: 1 }}>{fact.text}</div>
+      </div>
+
+      {/* Riddle */}
+      <div style={{
+        padding: 10, background: C.surfaceLight, borderRadius: 8,
+        border: `1px solid ${C.border}`,
+      }}>
+        <div style={{ fontSize: 9, color: C.amber, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+          Brain riddle
+        </div>
+        <div style={{ fontSize: 11, color: C.text, lineHeight: 1.5 }}>{riddle.q}</div>
+        <button
+          onClick={() => setShowAnswer(!showAnswer)}
+          style={{
+            marginTop: 6, padding: '4px 10px', background: 'transparent',
+            border: `1px solid ${C.border}`, borderRadius: 6,
+            color: C.muted, fontSize: 9, fontFamily: C.mono, cursor: 'pointer',
+          }}
+        >{showAnswer ? riddle.a : 'Reveal answer'}</button>
+      </div>
+    </div>
+  )
+}
+
 function WeeklyChallenge() {
   const ch = useMemo(() => getActiveChallenge(), [])
   if (!ch) return null
@@ -641,7 +691,10 @@ function NavRow({ navigate }) {
     { icon: '📝', label: 'Homework', to: '/homework' },
     { icon: '🃏', label: 'Flash', to: '/flashcards' },
     { icon: '🎾', label: 'Tennis', to: '/tennis' },
+    { icon: '🎹', label: 'Piano', to: '/piano' },
     { icon: '📖', label: 'Reading', to: '/reading' },
+    { icon: '📱', label: 'Screen', to: '/screentime' },
+    { icon: '🏅', label: 'Records', to: '/records' },
     { icon: '📰', label: 'News', to: '/news' },
     { icon: '⏱', label: 'Focus', to: '/focus' },
     { icon: '📈', label: 'Insights', to: '/insights' },
