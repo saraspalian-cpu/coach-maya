@@ -6,6 +6,7 @@ import { loadHistory as loadLessonHistory } from './agents/lessonAnalyst'
 import { getMemoryStats } from './agents/memory'
 import { weeklyInsights } from './agents/insights'
 import { getSuggestion } from './agents/suggestions'
+import { getActiveChallenge } from './agents/challenges'
 
 // Lazy load 3D avatar (Three.js is ~800KB)
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
@@ -236,6 +237,9 @@ export default function MayaDashboard({ onOpenSearch }) {
           )}
         </div>
       </div>
+
+      {/* ─── Weekly Challenge ─── */}
+      <WeeklyChallenge />
 
       {/* ─── Smart suggestion ─── */}
       <SuggestionCard navigate={navigate} maya={maya} />
@@ -597,11 +601,47 @@ function MayaMessageBubble({ message }) {
   )
 }
 
+function WeeklyChallenge() {
+  const ch = useMemo(() => getActiveChallenge(), [])
+  if (!ch) return null
+  const pct = Math.min(100, Math.round((ch.progress / ch.target) * 100))
+  return (
+    <div style={{
+      padding: '12px 16px',
+      background: `linear-gradient(135deg, ${C.gold}11, ${C.surface})`,
+      borderBottom: `1px solid ${C.border}`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ fontSize: 24 }}>{ch.icon}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 9, color: C.gold, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+            Weekly challenge {ch.completed ? '· DONE' : ''}
+          </div>
+          <div style={{ fontSize: 13, color: C.text, fontWeight: 600, marginTop: 2 }}>{ch.title}</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{ch.desc} · {ch.xp} XP</div>
+          <div style={{ height: 5, background: C.dim, borderRadius: 3, overflow: 'hidden', marginTop: 6 }}>
+            <div style={{
+              height: '100%', width: `${pct}%`,
+              background: ch.completed ? C.gold : `linear-gradient(90deg, ${C.gold}, ${C.amber})`,
+              transition: 'width 400ms',
+            }} />
+          </div>
+          <div style={{ fontSize: 9, color: C.muted, marginTop: 3 }}>{ch.progress}/{ch.target}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function NavRow({ navigate }) {
   const items = [
     { icon: '🎙', label: 'Vault', to: '/lessons' },
     { icon: '🧠', label: 'Memory', to: '/memory' },
     { icon: '🎯', label: 'Goals', to: '/goals' },
+    { icon: '📝', label: 'Homework', to: '/homework' },
+    { icon: '🃏', label: 'Flash', to: '/flashcards' },
+    { icon: '🎾', label: 'Tennis', to: '/tennis' },
+    { icon: '📖', label: 'Reading', to: '/reading' },
     { icon: '📰', label: 'News', to: '/news' },
     { icon: '⏱', label: 'Focus', to: '/focus' },
     { icon: '📈', label: 'Insights', to: '/insights' },

@@ -29,6 +29,10 @@ const MayaJournal = lazy(() => import('./features/maya/MayaJournal'))
 const MayaStory = lazy(() => import('./features/maya/MayaStory'))
 const MayaFocus = lazy(() => import('./features/maya/MayaFocus'))
 const MayaNews = lazy(() => import('./features/maya/MayaNews'))
+const MayaHomework = lazy(() => import('./features/maya/MayaHomework'))
+const MayaTennis = lazy(() => import('./features/maya/MayaTennis'))
+const MayaReading = lazy(() => import('./features/maya/MayaReading'))
+const MayaFlashcards = lazy(() => import('./features/maya/MayaFlashcards'))
 
 function Loading() {
   return (
@@ -86,6 +90,10 @@ function GatedRoutes() {
           <Route path="/story" element={<MayaStory />} />
           <Route path="/focus" element={<MayaFocus />} />
           <Route path="/news" element={<MayaNews />} />
+          <Route path="/homework" element={<MayaHomework />} />
+          <Route path="/tennis" element={<MayaTennis />} />
+          <Route path="/reading" element={<MayaReading />} />
+          <Route path="/flashcards" element={<MayaFlashcards />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
