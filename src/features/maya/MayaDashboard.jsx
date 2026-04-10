@@ -694,6 +694,7 @@ function NavRow({ navigate }) {
     { icon: '🎹', label: 'Piano', to: '/piano' },
     { icon: '📖', label: 'Reading', to: '/reading' },
     { icon: '📱', label: 'Screen', to: '/screentime' },
+    { icon: '📝', label: 'Vocab', to: '/vocab' },
     { icon: '🏅', label: 'Records', to: '/records' },
     { icon: '📰', label: 'News', to: '/news' },
     { icon: '⏱', label: 'Focus', to: '/focus' },

@@ -30,6 +30,7 @@ const NAV_ACTIONS = [
   { id: 'reading',     label: 'Reading tracker',   sub: 'Books + pages',    icon: '📖', go: '/reading' },
   { id: 'piano',       label: 'Piano practice',    sub: 'Metronome + log',  icon: '🎹', go: '/piano' },
   { id: 'screentime',  label: 'Screen time',       sub: 'Grade → earned time', icon: '📱', go: '/screentime' },
+  { id: 'vocab',       label: 'Vocabulary',        sub: 'Personal dictionary', icon: '📝', go: '/vocab' },
   { id: 'records',     label: 'Personal records',  sub: 'All-time bests',   icon: '🏅', go: '/records' },
   { id: 'news',        label: 'News feed',         sub: 'Tech + Tennis',    icon: '📰', go: '/news' },
   { id: 'focus',       label: 'Focus mode',        sub: 'Pomodoro timer',   icon: '⏱', go: '/focus' },

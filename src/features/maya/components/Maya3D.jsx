@@ -106,8 +106,8 @@ function Model({ state, mouseRef }) {
       group.current.rotation.z = Math.sin(t * 0.6) * 0.01
     }
 
-    // Subtle base-rotation ambience (very slow)
-    group.current.rotation.y += delta * (state === 'sleeping' ? 0.05 : 0.08)
+    // Base rotation
+    group.current.rotation.y += delta * (state === 'sleeping' ? 0.15 : state === 'celebrating' ? 0.8 : 0.4)
 
     // Eye / head tracking toward mouse
     if (rig.head && mouseRef?.current) {
