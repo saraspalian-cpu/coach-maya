@@ -239,6 +239,26 @@ export default function MayaDashboard({ onOpenSearch }) {
         </div>
       </div>
 
+      {/* ─── Onboarding nudge (non-blocking) ─── */}
+      {!profile?.setupComplete && (
+        <div
+          onClick={() => navigate('/onboarding')}
+          style={{
+            padding: '10px 16px', background: C.teal + '11',
+            borderBottom: `1px solid ${C.teal}33`,
+            display: 'flex', alignItems: 'center', gap: 10,
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: 16 }}>👋</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: C.teal, fontWeight: 600 }}>Set up your profile</div>
+            <div style={{ fontSize: 10, color: C.muted }}>Takes 30 seconds — Maya gets to know you</div>
+          </div>
+          <span style={{ color: C.teal, fontSize: 12 }}>→</span>
+        </div>
+      )}
+
       {/* ─── Weekly Challenge ─── */}
       <WeeklyChallenge />
 

@@ -58,7 +58,6 @@ function Loading() {
 
 function GatedRoutes() {
   const profile = loadProfile()
-  const needsOnboarding = !profile.setupComplete
   const [cmdOpen, setCmdOpen] = useState(false)
 
   useEffect(() => {
@@ -78,12 +77,7 @@ function GatedRoutes() {
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route
-            path="/"
-            element={needsOnboarding
-              ? <Navigate to="/onboarding" replace />
-              : <MayaDashboard onOpenSearch={() => setCmdOpen(true)} />}
-          />
+          <Route path="/" element={<MayaDashboard onOpenSearch={() => setCmdOpen(true)} />} />
           <Route path="/schedule" element={<MayaSchedule />} />
           <Route path="/profile" element={<MayaProfile />} />
           <Route path="/parent" element={<MayaParent />} />
@@ -118,8 +112,8 @@ function GatedRoutes() {
       <CommandBar open={cmdOpen} onClose={() => setCmdOpen(false)} />
       <AchievementModal />
       <LiveLessonBanner />
-      {!needsOnboarding && <BottomNav />}
-      {!needsOnboarding && <VoiceFab />}
+      <BottomNav />
+      <VoiceFab />
     </>
   )
 }
