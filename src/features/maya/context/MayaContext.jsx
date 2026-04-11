@@ -10,6 +10,7 @@ import { notify } from '../lib/notifications'
 import { startWatchdog, stopWatchdog } from '../lib/scheduler'
 import { WakeWordDetector } from '../lib/wakeWord'
 import sfx from '../lib/sfx'
+import { recordTaskOutcome, logFocusScore, logSubjectScore } from '../agents/intelligence'
 import {
   handleTaskComplete,
   handleTaskSkip,
@@ -188,6 +189,9 @@ function MayaProvider({ children }) {
     // Personality learner
     const updated = recordEvent({ type: 'task_complete', payload: { taskType: task.type } })
     dispatch({ type: 'SET_PROFILE', payload: updated })
+
+    // Intelligence layer
+    recordTaskOutcome(task.type, true)
   }, [state])
 
   const skipTask = useCallback(async (taskId) => {
