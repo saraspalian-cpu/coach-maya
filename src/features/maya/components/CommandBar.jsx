@@ -33,6 +33,7 @@ const NAV_ACTIONS = [
   { id: 'explain',     label: 'Maya explains',     sub: 'Ask anything',    icon: '💡', go: '/explain' },
   { id: 'timer',       label: 'Study timer',       sub: 'With ambient noise', icon: '⏲', go: '/timer' },
   { id: 'vocab',       label: 'Vocabulary',        sub: 'Personal dictionary', icon: '📝', go: '/vocab' },
+  { id: 'intel',       label: 'Maya Knows',        sub: 'Predictions + patterns', icon: '🧿', go: '/intel' },
   { id: 'habits',      label: 'Habit tracker',     sub: 'Daily habits + streaks', icon: '✅', go: '/habits' },
   { id: 'mathdrill',   label: 'Math drill',        sub: 'Timed mental math',icon: '🧮', go: '/mathdrill' },
   { id: 'typing',      label: 'Typing test',       sub: 'WPM speed test',   icon: '⌨️', go: '/typing' },

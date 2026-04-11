@@ -720,6 +720,7 @@ function NavRow({ navigate }) {
     { icon: '✅', label: 'Habits', to: '/habits' },
     { icon: '🧮', label: 'Math', to: '/mathdrill' },
     { icon: '⌨️', label: 'Typing', to: '/typing' },
+    { icon: '🧿', label: 'Intel', to: '/intel' },
     { icon: '🏅', label: 'Records', to: '/records' },
     { icon: '📰', label: 'News', to: '/news' },
     { icon: '⏱', label: 'Focus', to: '/focus' },
