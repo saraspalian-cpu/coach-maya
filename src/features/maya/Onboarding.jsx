@@ -286,6 +286,23 @@ export default function Onboarding() {
           {isLast ? 'Start Coaching' : 'Next'}
         </button>
       </div>
+
+      {/* Skip for returning users */}
+      {step === 0 && (
+        <div style={{ textAlign: 'center', paddingBottom: 16 }}>
+          <button
+            onClick={() => {
+              saveProfile({ ...profile, setupComplete: true, setupAt: new Date().toISOString() })
+              window.location.href = '/'
+            }}
+            style={{
+              background: 'none', border: 'none',
+              color: C.muted, fontSize: 11, fontFamily: C.mono,
+              cursor: 'pointer', textDecoration: 'underline',
+            }}
+          >Already done this? Skip to dashboard →</button>
+        </div>
+      )}
     </div>
   )
 }
