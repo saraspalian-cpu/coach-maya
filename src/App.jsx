@@ -39,6 +39,9 @@ const MayaRecords = lazy(() => import('./features/maya/MayaRecords'))
 const MayaVocab = lazy(() => import('./features/maya/MayaVocab'))
 const MayaExplain = lazy(() => import('./features/maya/MayaExplain'))
 const MayaTimer = lazy(() => import('./features/maya/MayaTimer'))
+const MayaHabits = lazy(() => import('./features/maya/MayaHabits'))
+const MayaMathDrill = lazy(() => import('./features/maya/MayaMathDrill'))
+const MayaTyping = lazy(() => import('./features/maya/MayaTyping'))
 
 function Loading() {
   return (
@@ -106,6 +109,9 @@ function GatedRoutes() {
           <Route path="/vocab" element={<MayaVocab />} />
           <Route path="/explain" element={<MayaExplain />} />
           <Route path="/timer" element={<MayaTimer />} />
+          <Route path="/habits" element={<MayaHabits />} />
+          <Route path="/mathdrill" element={<MayaMathDrill />} />
+          <Route path="/typing" element={<MayaTyping />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
