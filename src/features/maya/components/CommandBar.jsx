@@ -37,6 +37,8 @@ const NAV_ACTIONS = [
   { id: 'habits',      label: 'Habit tracker',     sub: 'Daily habits + streaks', icon: '✅', go: '/habits' },
   { id: 'mathdrill',   label: 'Math drill',        sub: 'Timed mental math',icon: '🧮', go: '/mathdrill' },
   { id: 'typing',      label: 'Typing test',       sub: 'WPM speed test',   icon: '⌨️', go: '/typing' },
+  { id: 'sleep',       label: 'Sleep tracker',     sub: 'Hours + debt',     icon: '😴', go: '/sleep' },
+  { id: 'water',       label: 'Water intake',      sub: 'Daily glasses',    icon: '💧', go: '/water' },
   { id: 'records',     label: 'Personal records',  sub: 'All-time bests',   icon: '🏅', go: '/records' },
   { id: 'news',        label: 'News feed',         sub: 'Tech + Tennis',    icon: '📰', go: '/news' },
   { id: 'focus',       label: 'Focus mode',        sub: 'Pomodoro timer',   icon: '⏱', go: '/focus' },

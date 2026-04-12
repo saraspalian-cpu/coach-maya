@@ -43,6 +43,8 @@ const MayaHabits = lazy(() => import('./features/maya/MayaHabits'))
 const MayaMathDrill = lazy(() => import('./features/maya/MayaMathDrill'))
 const MayaTyping = lazy(() => import('./features/maya/MayaTyping'))
 const MayaIntel = lazy(() => import('./features/maya/MayaIntel'))
+const MayaSleep = lazy(() => import('./features/maya/MayaSleep'))
+const MayaWater = lazy(() => import('./features/maya/MayaWater'))
 
 function Loading() {
   return (
@@ -108,6 +110,8 @@ function GatedRoutes() {
           <Route path="/mathdrill" element={<MayaMathDrill />} />
           <Route path="/typing" element={<MayaTyping />} />
           <Route path="/intel" element={<MayaIntel />} />
+          <Route path="/sleep" element={<MayaSleep />} />
+          <Route path="/water" element={<MayaWater />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

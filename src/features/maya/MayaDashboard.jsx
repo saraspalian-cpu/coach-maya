@@ -8,6 +8,7 @@ import { weeklyInsights } from './agents/insights'
 import { getSuggestion } from './agents/suggestions'
 import { getActiveChallenge } from './agents/challenges'
 import { getDailyFact, getDailyRiddle, getDailyQuote } from './agents/dailyContent'
+import { EXCUSE_OPTIONS, logSkipReason, recordTaskOutcome } from './agents/intelligence'
 
 // Lazy load 3D avatar (Three.js is ~800KB)
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
@@ -48,6 +49,8 @@ export default function MayaDashboard({ onOpenSearch }) {
   const [chatInput, setChatInput] = useState('')
   const [spotCheckInput, setSpotCheckInput] = useState('')
   const [activeTab, setActiveTab] = useState('tasks')
+  const [skipPending, setSkipPending] = useState(null) // task being skipped, waiting for reason
+  const [showAnswer, setShowAnswer] = useState(false)
   const messagesEndRef = useRef(null)
   const navigate = useNavigate()
 
@@ -302,7 +305,7 @@ export default function MayaDashboard({ onOpenSearch }) {
 
       {/* ─── Content ─── */}
       <div style={{ padding: '12px 16px' }}>
-        {activeTab === 'tasks' && <TasksTab maya={maya} />}
+        {activeTab === 'tasks' && <TasksTab maya={maya} onSkipRequest={(task) => setSkipPending(task)} />}
         {activeTab === 'stats' && <StatsTab maya={maya} />}
         {activeTab === 'chat' && (
           <ChatTab
@@ -388,8 +391,50 @@ export default function MayaDashboard({ onOpenSearch }) {
         </div>
       )}
 
+      {/* ─── Excuse Picker (when skipping a task) ─── */}
+      {skipPending && (
+        <div style={{
+          position: 'fixed', bottom: 70, left: 0, right: 0,
+          maxWidth: 480, margin: '0 auto', padding: 16,
+          background: C.surfaceLight, borderTop: `2px solid ${C.red}`,
+          zIndex: 120,
+        }}>
+          <div style={{ fontSize: 10, color: C.red, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+            Skipping "{skipPending.name}" — why?
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {EXCUSE_OPTIONS.map(ex => (
+              <button
+                key={ex.id}
+                onClick={() => {
+                  logSkipReason(skipPending.type, ex.id)
+                  recordTaskOutcome(skipPending.type, false)
+                  maya.skipTask(skipPending.id)
+                  setSkipPending(null)
+                }}
+                style={{
+                  padding: '8px 12px', background: C.surface,
+                  border: `1px solid ${C.border}`, borderRadius: 999,
+                  color: C.text, fontSize: 11, fontFamily: C.mono,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <span>{ex.icon}</span> {ex.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSkipPending(null)}
+            style={{
+              marginTop: 8, background: 'none', border: 'none',
+              color: C.muted, fontSize: 10, fontFamily: C.mono, cursor: 'pointer',
+            }}
+          >Cancel</button>
+        </div>
+      )}
+
       {/* ─── Mood Check ─── */}
-      {!todayMood && completedCount >= 1 && activeTab === 'tasks' && !pendingSpotCheck && !isListening && (
+      {!todayMood && completedCount >= 1 && activeTab === 'tasks' && !pendingSpotCheck && !isListening && !skipPending && (
         <MoodPicker maya={maya} />
       )}
     </div>
@@ -397,8 +442,8 @@ export default function MayaDashboard({ onOpenSearch }) {
 }
 
 // ─── Tasks Tab ───
-function TasksTab({ maya }) {
-  const { tasks, completeTask, skipTask } = maya
+function TasksTab({ maya, onSkipRequest }) {
+  const { tasks, completeTask } = maya
   return (
     <div>
       <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
@@ -439,7 +484,7 @@ function TasksTab({ maya }) {
           </div>
           {!task.completed && !task.skipped && (
             <button
-              onClick={() => skipTask(task.id)}
+              onClick={() => onSkipRequest(task)}
               style={{
                 padding: '4px 10px', background: 'transparent',
                 border: `1px solid ${C.dim}`, borderRadius: 6,
@@ -720,6 +765,8 @@ function NavRow({ navigate }) {
     { icon: '✅', label: 'Habits', to: '/habits' },
     { icon: '🧮', label: 'Math', to: '/mathdrill' },
     { icon: '⌨️', label: 'Typing', to: '/typing' },
+    { icon: '😴', label: 'Sleep', to: '/sleep' },
+    { icon: '💧', label: 'Water', to: '/water' },
     { icon: '🧿', label: 'Intel', to: '/intel' },
     { icon: '🏅', label: 'Records', to: '/records' },
     { icon: '📰', label: 'News', to: '/news' },
