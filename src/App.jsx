@@ -45,6 +45,9 @@ const MayaTyping = lazy(() => import('./features/maya/MayaTyping'))
 const MayaIntel = lazy(() => import('./features/maya/MayaIntel'))
 const MayaSleep = lazy(() => import('./features/maya/MayaSleep'))
 const MayaWater = lazy(() => import('./features/maya/MayaWater'))
+const MayaWorkout = lazy(() => import('./features/maya/MayaWorkout'))
+const MayaMoodBoard = lazy(() => import('./features/maya/MayaMoodBoard'))
+const MayaWeekly = lazy(() => import('./features/maya/MayaWeekly'))
 
 function Loading() {
   return (
@@ -112,6 +115,9 @@ function GatedRoutes() {
           <Route path="/intel" element={<MayaIntel />} />
           <Route path="/sleep" element={<MayaSleep />} />
           <Route path="/water" element={<MayaWater />} />
+          <Route path="/workout" element={<MayaWorkout />} />
+          <Route path="/moods" element={<MayaMoodBoard />} />
+          <Route path="/weekly" element={<MayaWeekly />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

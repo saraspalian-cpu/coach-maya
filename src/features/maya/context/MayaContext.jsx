@@ -11,6 +11,7 @@ import { startWatchdog, stopWatchdog } from '../lib/scheduler'
 import { WakeWordDetector } from '../lib/wakeWord'
 import sfx from '../lib/sfx'
 import { recordTaskOutcome, logFocusScore, logSubjectScore } from '../agents/intelligence'
+import { saveMood as saveMoodToHistory } from '../MayaMoodBoard'
 import {
   handleTaskComplete,
   handleTaskSkip,
@@ -230,6 +231,7 @@ function MayaProvider({ children }) {
       dayLog: result.state.dayLog,
     }})
     dispatch({ type: 'SET_MOOD', payload: mood })
+    saveMoodToHistory(mood)
     const updated = recordEvent({ type: 'mood', payload: { mood } })
     dispatch({ type: 'SET_PROFILE', payload: updated })
   }, [state])
