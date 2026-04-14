@@ -12,6 +12,7 @@ import { WakeWordDetector } from '../lib/wakeWord'
 import sfx from '../lib/sfx'
 import { recordTaskOutcome, logFocusScore, logSubjectScore } from '../agents/intelligence'
 import { saveMood as saveMoodToHistory } from '../MayaMoodBoard'
+import { generateDefaultSchedule } from '../agents/scheduleGenerator'
 import {
   handleTaskComplete,
   handleTaskSkip,
@@ -38,13 +39,7 @@ function saveToStorage(key, data) {
   try { localStorage.setItem(key, JSON.stringify(data)) } catch {}
 }
 
-const DEFAULT_SCHEDULE = [
-  { id: '1', name: 'Maths',      type: 'maths',     startTime: null, duration: 45, completed: false },
-  { id: '2', name: 'Reading',    type: 'reading',   startTime: null, duration: 30, completed: false },
-  { id: '3', name: 'Tennis',     type: 'tennis',    startTime: null, duration: 60, completed: false },
-  { id: '4', name: 'Piano',      type: 'piano',     startTime: null, duration: 30, completed: false },
-  { id: '5', name: 'Reflection', type: 'reflection', startTime: null, duration: 10, completed: false },
-]
+const DEFAULT_SCHEDULE = generateDefaultSchedule()
 
 function mayaReducer(state, action) {
   switch (action.type) {

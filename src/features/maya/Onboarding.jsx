@@ -1,402 +1,361 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+/**
+ * Conversational Onboarding — Maya asks 5 questions, kid answers naturally.
+ * Profile is extracted from free text, schedule is auto-generated.
+ * No forms, no dropdowns, no checkboxes. Just a chat.
+ */
+import { useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { loadProfile, saveProfile } from './lib/profile'
-import { speak } from './lib/voice'
-import { lazy, Suspense } from 'react'
+import { buildProfileFromChat, toAppProfile } from './agents/profileBuilder'
+import { generateSchedule } from './agents/scheduleGenerator'
+
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
 
 const C = {
-  bg: '#060c18',
-  surface: '#0c1624',
-  surfaceLight: '#121e30',
-  border: '#1a2a3e',
-  text: '#e8edf3',
-  muted: '#6b7f99',
-  dim: '#3a4f6a',
-  teal: '#2DD4BF',
-  gold: '#FFD700',
-  mono: "'IBM Plex Mono', monospace",
-  display: "'Bebas Neue', sans-serif",
+  bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
+  border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
+  dim: '#3a4f6a', teal: '#2DD4BF', gold: '#FFD700',
+  mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 
-const HOBBY_OPTIONS = ['Tennis', 'Football', 'Basketball', 'Piano', 'Guitar', 'Drawing', 'Gaming', 'Coding', 'Reading', 'Chess', 'Skating', 'Cycling']
-const SUBJECT_OPTIONS = ['Maths', 'Science', 'Reading', 'Writing', 'History', 'Geography', 'Languages', 'Art', 'Music', 'PE']
-const HUMOR_OPTIONS = [
-  { id: 'sarcastic', label: 'Sarcastic', desc: '"Wow, the floor must be magnetic."' },
-  { id: 'playful', label: 'Playful', desc: '"Bet you can\'t finish before me."' },
-  { id: 'dry', label: 'Dry', desc: '"Cool. Combo gone."' },
-  { id: 'wholesome', label: 'Wholesome', desc: '"You got this — for real."' },
+const MAYA_QUESTIONS = [
+  {
+    key: 'q1',
+    text: "Hey! I'm Maya — your coach. What's your name and how old are you?",
+    placeholder: "e.g. I'm Alex, 11 years old",
+  },
+  {
+    key: 'q2',
+    text: null, // dynamically generated with name
+    placeholder: "e.g. I play football and guitar, and I do coding club",
+  },
+  {
+    key: 'q3',
+    text: null,
+    placeholder: "e.g. I like science and art but I hate maths",
+  },
+  {
+    key: 'q4',
+    text: null,
+    placeholder: "e.g. around 9:30",
+  },
+  {
+    key: 'q5',
+    text: null,
+    placeholder: "e.g. get better at maths / make the school team / learn piano",
+  },
 ]
-const DRIVERS = [
-  { id: 'competition', label: 'Competing', desc: 'Beat my own records' },
-  { id: 'identity', label: 'Identity', desc: 'Become who I want to be' },
-  { id: 'mastery', label: 'Mastery', desc: 'Get really good at things' },
-  { id: 'autonomy', label: 'Autonomy', desc: 'My choices, my way' },
-]
+
+function getMayaQuestion(index, answers) {
+  if (index === 0) return MAYA_QUESTIONS[0].text
+
+  // Extract name from first answer for personalization
+  const q1 = (answers.q1 || '').trim()
+  const nameMatch = q1.match(/(?:i'?m|my name is|name'?s|call me)\s+(\w+)/i)
+    || q1.match(/^(\w+)/)
+  const name = nameMatch ? nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase() : 'you'
+
+  const questions = [
+    null, // q1 already handled
+    `Nice to meet you, ${name}. What do you do after school? Any sports, instruments, clubs, hobbies?`,
+    `Cool. What about school — any subjects you actually like? And any you can't stand?`,
+    `What time do you usually go to bed?`,
+    `Last one. What's one thing you want to get better at this year? Anything counts.`,
+  ]
+  return questions[index]
+}
 
 export default function Onboarding() {
-  const navigate = useNavigate()
-  const [step, setStep] = useState(0)
-  const [profile, setProfile] = useState(() => loadProfile())
+  const [messages, setMessages] = useState([
+    { from: 'maya', text: getMayaQuestion(0, {}) },
+  ])
+  const [input, setInput] = useState('')
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [answers, setAnswers] = useState({})
+  const [building, setBuilding] = useState(false)
+  const [summary, setSummary] = useState(null)
+  const [parentPin, setParentPin] = useState('')
+  const [showPinStep, setShowPinStep] = useState(false)
+  const messagesEndRef = useRef(null)
+  const inputRef = useRef(null)
 
-  const update = (patch) => setProfile((p) => ({ ...p, ...patch }))
-  const toggleArr = (key, value) => {
-    const arr = profile[key] || []
-    const next = arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value]
-    update({ [key]: next })
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [questionIndex, showPinStep])
+
+  const sendAnswer = async () => {
+    const text = input.trim()
+    if (!text) return
+
+    const key = MAYA_QUESTIONS[questionIndex].key
+    const newAnswers = { ...answers, [key]: text }
+    setAnswers(newAnswers)
+    setInput('')
+
+    // Add user message
+    setMessages(prev => [...prev, { from: 'user', text }])
+
+    const nextIndex = questionIndex + 1
+
+    if (nextIndex < MAYA_QUESTIONS.length) {
+      // Ask next question
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          from: 'maya',
+          text: getMayaQuestion(nextIndex, newAnswers),
+        }])
+        setQuestionIndex(nextIndex)
+      }, 600)
+    } else {
+      // All questions answered — build profile
+      setBuilding(true)
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          from: 'maya',
+          text: "Give me a sec — building your world...",
+        }])
+      }, 400)
+
+      try {
+        const extracted = await buildProfileFromChat(newAnswers)
+        const appProfile = toAppProfile(extracted)
+        const schedule = generateSchedule(extracted)
+
+        setSummary({ profile: appProfile, schedule, extracted })
+        setBuilding(false)
+
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            from: 'maya',
+            text: buildSummaryText(appProfile, schedule),
+          }])
+          // Ask for parent PIN
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              from: 'maya',
+              text: "One more thing — pick a 4-digit PIN so your parent can check your progress. Only they'll need it.",
+            }])
+            setShowPinStep(true)
+          }, 1200)
+        }, 800)
+      } catch {
+        setBuilding(false)
+        setMessages(prev => [...prev, {
+          from: 'maya',
+          text: "Something went wrong building your profile. Let's just get started — you can set things up later in Settings.",
+        }])
+        setTimeout(() => {
+          saveProfile({ ...loadProfile(), setupComplete: true, setupAt: new Date().toISOString() })
+          window.location.href = '/'
+        }, 2000)
+      }
+    }
   }
 
-  const finish = () => {
-    saveProfile({ ...profile, setupComplete: true, setupAt: new Date().toISOString() })
-    // Hard reload so MayaProvider re-reads profile from storage
-    window.location.href = '/'
+  const finishSetup = () => {
+    if (!summary) return
+
+    const profile = {
+      ...loadProfile(),
+      ...summary.profile,
+    }
+    if (parentPin.length === 4) {
+      profile.parentPin = parentPin
+    }
+    saveProfile(profile)
+
+    // Save generated schedule
+    try {
+      localStorage.setItem('maya_schedule', JSON.stringify(summary.schedule))
+    } catch {}
+
+    setMessages(prev => [...prev, {
+      from: 'maya',
+      text: `Let's go, ${profile.name}. Day one starts now.`,
+    }])
+
+    setTimeout(() => {
+      window.location.href = '/'
+    }, 1200)
   }
 
-  const steps = [
-    {
-      title: "I'm Maya.",
-      subtitle: 'Your AI growth companion. Let me get to know you.',
-      content: (
-        <div style={{ textAlign: 'center', padding: '0 20px' }}>
-          <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, marginBottom: 24 }}>
-            I'll keep you on track. I'll celebrate your wins. I'll call you out when you're slacking.
-            <br /><br />
-            But first — who are you?
-          </p>
-        </div>
-      ),
-    },
-    {
-      title: "What's your name?",
-      subtitle: '',
-      content: (
-        <div style={{ padding: '0 24px' }}>
-          <input
-            value={profile.name}
-            onChange={(e) => update({ name: e.target.value })}
-            placeholder="Your name"
-            autoFocus
-            style={inputStyle}
-          />
-          <div style={{ marginTop: 16 }}>
-            <label style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', letterSpacing: 1 }}>Age</label>
-            <input
-              type="number"
-              value={profile.age}
-              onChange={(e) => update({ age: parseInt(e.target.value) || 12 })}
-              style={{ ...inputStyle, marginTop: 6 }}
-            />
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'What are you into?',
-      subtitle: 'Pick all that apply.',
-      content: (
-        <ChipGrid options={HOBBY_OPTIONS} selected={profile.hobbies} onToggle={(v) => toggleArr('hobbies', v)} />
-      ),
-    },
-    {
-      title: 'School subjects you love.',
-      subtitle: 'The ones you actually look forward to.',
-      content: (
-        <ChipGrid options={SUBJECT_OPTIONS} selected={profile.favoriteSubjects} onToggle={(v) => toggleArr('favoriteSubjects', v)} />
-      ),
-    },
-    {
-      title: 'Subjects you avoid.',
-      subtitle: "I'll know to push harder on these.",
-      content: (
-        <ChipGrid options={SUBJECT_OPTIONS} selected={profile.hardSubjects} onToggle={(v) => toggleArr('hardSubjects', v)} />
-      ),
-    },
-    {
-      title: 'How should I talk to you?',
-      subtitle: 'Pick the vibe.',
-      content: (
-        <Choices
-          options={HUMOR_OPTIONS}
-          selected={profile.humorStyle}
-          onPick={(id) => update({ humorStyle: id })}
-        />
-      ),
-    },
-    {
-      title: 'What drives you?',
-      subtitle: '',
-      content: (
-        <Choices
-          options={DRIVERS}
-          selected={profile.motivationDriver}
-          onPick={(id) => update({ motivationDriver: id })}
-        />
-      ),
-    },
-    {
-      title: 'How hard should I push?',
-      subtitle: 'You can change this anytime.',
-      content: (
-        <Choices
-          options={[
-            { id: 'light', label: 'Light', desc: 'Gentle nudges' },
-            { id: 'medium', label: 'Medium', desc: 'Real coach energy' },
-            { id: 'hard', label: 'Hard', desc: 'No excuses mode' },
-          ]}
-          selected={profile.pushIntensity}
-          onPick={(id) => update({ pushIntensity: id })}
-        />
-      ),
-    },
-    {
-      title: "Your big goal?",
-      subtitle: 'One thing you want to crush this year.',
-      content: (
-        <div style={{ padding: '0 24px' }}>
-          <input
-            value={profile.bigGoals?.[0] || ''}
-            onChange={(e) => update({ bigGoals: [e.target.value] })}
-            placeholder="e.g. Make varsity tennis"
-            autoFocus
-            style={inputStyle}
-          />
-          <p style={{ fontSize: 11, color: C.muted, marginTop: 12, lineHeight: 1.5 }}>
-            I'll remember this. Every grind session is one step closer.
-          </p>
-        </div>
-      ),
-    },
-    {
-      title: 'Hear my voice.',
-      subtitle: 'Tap to test how I sound.',
-      content: (
-        <div style={{ textAlign: 'center', padding: '0 24px' }}>
-          <button
-            onClick={() => {
-              // Save first so voice picker uses current settings
-              saveProfile(profile)
-              speak(`Hey ${profile.name || 'Vasco'}. This is Maya. I'll be coaching you from here on out. Let's build something.`)
-            }}
-            style={{
-              padding: '14px 24px', background: C.teal,
-              border: 'none', borderRadius: 12,
-              color: C.bg, fontSize: 14, fontFamily: C.mono,
-              fontWeight: 700, cursor: 'pointer',
-            }}
-          >▶ Hear Maya</button>
-          <p style={{ fontSize: 11, color: C.muted, marginTop: 14, lineHeight: 1.5 }}>
-            Sounds robotic? You can switch to a real human voice later in Profile (ElevenLabs).
-          </p>
-        </div>
-      ),
-    },
-    {
-      title: "Let's go.",
-      subtitle: "I've got everything I need. Day one starts now.",
-      content: (
-        <div style={{ textAlign: 'center', padding: '0 24px' }}>
-          <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
-            <div><strong style={{ color: C.text }}>{profile.name}</strong>, age {profile.age}</div>
-            <div>Loves: {profile.favoriteSubjects?.join(', ') || '—'}</div>
-            <div>Hobbies: {profile.hobbies?.join(', ') || '—'}</div>
-            <div>Goal: {profile.bigGoals?.[0] || '—'}</div>
-          </div>
-        </div>
-      ),
-    },
-  ]
-
-  const cur = steps[step]
-  const isLast = step === steps.length - 1
-  const canNext = (() => {
-    if (step === 1) return profile.name?.trim().length > 0
-    return true
-  })()
+  const isWaiting = building || (questionIndex >= MAYA_QUESTIONS.length && !summary && !showPinStep)
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: `radial-gradient(ellipse at top, ${C.surfaceLight} 0%, ${C.bg} 60%)`,
-      color: C.text,
-      fontFamily: C.mono,
-      display: 'flex',
-      flexDirection: 'column',
+      minHeight: '100vh', background: C.bg, color: C.text,
+      fontFamily: C.mono, display: 'flex', flexDirection: 'column',
     }}>
-      {/* Maya hero */}
-      <div style={{ paddingTop: 24 }}>
-        <Suspense fallback={<div style={{ height: 260 }}/>}>
-          <MayaAvatar state={isLast ? 'celebrating' : 'speaking'} size={260} />
-        </Suspense>
-      </div>
-
-      {/* Progress dots */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-        {steps.map((_, i) => (
-          <div key={i} style={{
-            width: i === step ? 24 : 6,
-            height: 6,
-            borderRadius: 4,
-            background: i <= step ? C.teal : C.dim,
-            transition: 'all 300ms ease',
-          }} />
-        ))}
-      </div>
-
-      {/* Content */}
+      {/* Maya avatar — smaller for chat mode */}
       <div style={{
-        flex: 1,
-        padding: '24px 16px 16px',
-        maxWidth: 480,
-        margin: '0 auto',
-        width: '100%',
+        padding: '16px 0 8px', textAlign: 'center',
+        background: `radial-gradient(ellipse at top, ${C.surfaceLight} 0%, ${C.bg} 70%)`,
+        borderBottom: `1px solid ${C.border}`,
       }}>
+        <Suspense fallback={<div style={{ height: 160 }} />}>
+          <MayaAvatar state={building ? 'thinking' : summary ? 'celebrating' : 'speaking'} size={160} />
+        </Suspense>
         <div style={{
-          fontFamily: C.display,
-          fontSize: 32,
-          letterSpacing: 1.5,
-          color: C.teal,
-          textAlign: 'center',
-          marginBottom: 4,
-        }}>{cur.title}</div>
-        {cur.subtitle && (
-          <div style={{ fontSize: 12, color: C.muted, textAlign: 'center', marginBottom: 24 }}>
-            {cur.subtitle}
+          fontFamily: C.display, fontSize: 22, letterSpacing: 2,
+          color: C.teal, marginTop: 4,
+        }}>MEET MAYA</div>
+      </div>
+
+      {/* Chat messages */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: '16px 16px 8px',
+        maxWidth: 480, margin: '0 auto', width: '100%',
+      }}>
+        {messages.map((msg, i) => (
+          <div key={i} style={{
+            marginBottom: 12, display: 'flex',
+            justifyContent: msg.from === 'user' ? 'flex-end' : 'flex-start',
+          }}>
+            <div style={{
+              maxWidth: '85%', padding: '12px 16px',
+              borderRadius: msg.from === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+              background: msg.from === 'user' ? C.teal + '22' : C.surfaceLight,
+              border: `1px solid ${msg.from === 'user' ? C.teal + '33' : C.border}`,
+              fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-line',
+            }}>
+              {msg.from === 'maya' && (
+                <div style={{ fontSize: 9, color: C.teal, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                  Maya
+                </div>
+              )}
+              {msg.text}
+            </div>
+          </div>
+        ))}
+
+        {building && (
+          <div style={{ textAlign: 'center', padding: 16 }}>
+            <div style={{
+              display: 'inline-block', padding: '8px 16px',
+              background: C.surfaceLight, borderRadius: 12,
+              fontSize: 11, color: C.teal,
+              animation: 'pulse 1.4s infinite',
+            }}>
+              analyzing...
+            </div>
           </div>
         )}
-        <div style={{ marginTop: 12 }}>{cur.content}</div>
+
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Nav */}
+      {/* Input area */}
       <div style={{
-        padding: 16,
-        display: 'flex',
-        gap: 12,
-        maxWidth: 480,
-        margin: '0 auto',
-        width: '100%',
+        padding: '12px 16px 24px', borderTop: `1px solid ${C.border}`,
+        background: C.surface, maxWidth: 480, margin: '0 auto', width: '100%',
       }}>
-        {step > 0 && (
-          <button onClick={() => setStep(step - 1)} style={btnSecondary}>Back</button>
+        {showPinStep ? (
+          <div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                ref={inputRef}
+                type="tel"
+                maxLength={4}
+                value={parentPin}
+                onChange={e => setParentPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="4-digit PIN"
+                onKeyDown={e => e.key === 'Enter' && (parentPin.length === 4 || parentPin.length === 0) && finishSetup()}
+                style={{
+                  ...inputStyle,
+                  textAlign: 'center', fontSize: 24, letterSpacing: 12,
+                  fontFamily: C.display,
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button onClick={finishSetup} style={btnPrimary}>
+                {parentPin.length === 4 ? "Let's go" : 'Skip PIN'}
+              </button>
+            </div>
+            <div style={{ fontSize: 10, color: C.dim, textAlign: 'center', marginTop: 8 }}>
+              {parentPin.length === 4 ? 'PIN set. Parent will use this to access reports.' : 'You can set a PIN later in settings.'}
+            </div>
+          </div>
+        ) : !isWaiting && questionIndex < MAYA_QUESTIONS.length ? (
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && sendAnswer()}
+              placeholder={MAYA_QUESTIONS[questionIndex]?.placeholder || 'Type your answer...'}
+              style={inputStyle}
+            />
+            <button onClick={sendAnswer} disabled={!input.trim()} style={{
+              ...btnPrimary, flex: 'none', width: 64,
+              opacity: input.trim() ? 1 : 0.4,
+            }}>→</button>
+          </div>
+        ) : summary && !showPinStep ? null : (
+          <div style={{ textAlign: 'center', fontSize: 11, color: C.dim, padding: 8 }}>
+            Maya is thinking...
+          </div>
         )}
-        <button
-          onClick={() => isLast ? finish() : setStep(step + 1)}
-          disabled={!canNext}
-          style={{ ...btnPrimary, opacity: canNext ? 1 : 0.4 }}
-        >
-          {isLast ? 'Start Coaching' : 'Next'}
-        </button>
+
+        {/* Skip link */}
+        {questionIndex === 0 && !building && !summary && (
+          <div style={{ textAlign: 'center', marginTop: 12 }}>
+            <button
+              onClick={() => {
+                saveProfile({ ...loadProfile(), setupComplete: true, setupAt: new Date().toISOString() })
+                window.location.href = '/'
+              }}
+              style={{
+                background: 'none', border: 'none', color: C.dim,
+                fontSize: 10, fontFamily: C.mono, cursor: 'pointer',
+                textDecoration: 'underline',
+              }}
+            >Already set up? Skip to dashboard →</button>
+          </div>
+        )}
       </div>
-
-      {/* Skip for returning users */}
-      {step === 0 && (
-        <div style={{ textAlign: 'center', paddingBottom: 16 }}>
-          <button
-            onClick={() => {
-              saveProfile({ ...profile, setupComplete: true, setupAt: new Date().toISOString() })
-              window.location.href = '/'
-            }}
-            style={{
-              background: 'none', border: 'none',
-              color: C.muted, fontSize: 11, fontFamily: C.mono,
-              cursor: 'pointer', textDecoration: 'underline',
-            }}
-          >Already done this? Skip to dashboard →</button>
-        </div>
-      )}
     </div>
   )
 }
 
-function ChipGrid({ options, selected = [], onToggle }) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 24px', justifyContent: 'center' }}>
-      {options.map(opt => {
-        const isOn = selected.includes(opt)
-        return (
-          <button
-            key={opt}
-            onClick={() => onToggle(opt)}
-            style={{
-              padding: '10px 16px',
-              borderRadius: 999,
-              border: `1px solid ${isOn ? C.teal : C.border}`,
-              background: isOn ? C.teal + '22' : 'transparent',
-              color: isOn ? C.teal : C.text,
-              fontSize: 12,
-              fontFamily: C.mono,
-              cursor: 'pointer',
-              transition: 'all 200ms ease',
-            }}
-          >{opt}</button>
-        )
-      })}
-    </div>
-  )
-}
+function buildSummaryText(profile, schedule) {
+  const lines = [`Here's what I've got, ${profile.name}:\n`]
 
-function Choices({ options, selected, onPick }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 24px' }}>
-      {options.map(opt => {
-        const isOn = selected === opt.id
-        return (
-          <button
-            key={opt.id}
-            onClick={() => onPick(opt.id)}
-            style={{
-              padding: '14px 16px',
-              borderRadius: 12,
-              border: `1px solid ${isOn ? C.teal : C.border}`,
-              background: isOn ? C.teal + '15' : C.surface,
-              color: C.text,
-              fontFamily: C.mono,
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 200ms ease',
-            }}
-          >
-            <div style={{ fontSize: 13, fontWeight: 600, color: isOn ? C.teal : C.text }}>{opt.label}</div>
-            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{opt.desc}</div>
-          </button>
-        )
-      })}
-    </div>
-  )
+  if (profile.hobbies.length > 0) {
+    lines.push(`Activities: ${profile.hobbies.join(', ')}`)
+  }
+  if (profile.favoriteSubjects.length > 0) {
+    lines.push(`Loves: ${profile.favoriteSubjects.join(', ')}`)
+  }
+  if (profile.hardSubjects.length > 0) {
+    lines.push(`Needs work: ${profile.hardSubjects.join(', ')}`)
+  }
+  if (profile.bigGoals.length > 0) {
+    lines.push(`Goal: ${profile.bigGoals[0]}`)
+  }
+
+  lines.push(`\nYour daily schedule (${schedule.length} tasks):`)
+  schedule.forEach(t => {
+    lines.push(`  ${t.name} — ${t.duration}min`)
+  })
+
+  lines.push(`\nYou can tweak this anytime in Schedule.`)
+  return lines.join('\n')
 }
 
 const inputStyle = {
-  width: '100%',
-  padding: '14px 16px',
-  background: C.surface,
-  border: `1px solid ${C.border}`,
-  borderRadius: 12,
-  color: C.text,
-  fontSize: 16,
-  fontFamily: C.mono,
-  outline: 'none',
-  boxSizing: 'border-box',
+  flex: 1, padding: '14px 16px', background: C.bg,
+  border: `1px solid ${C.border}`, borderRadius: 12,
+  color: C.text, fontSize: 14, fontFamily: C.mono,
+  outline: 'none', boxSizing: 'border-box',
 }
 
 const btnPrimary = {
-  flex: 1,
-  padding: '14px 20px',
-  background: C.teal,
-  color: C.bg,
-  border: 'none',
-  borderRadius: 12,
-  fontSize: 14,
-  fontFamily: C.mono,
-  fontWeight: 700,
-  cursor: 'pointer',
-  letterSpacing: 0.5,
-}
-const btnSecondary = {
-  padding: '14px 20px',
-  background: 'transparent',
-  color: C.muted,
-  border: `1px solid ${C.border}`,
-  borderRadius: 12,
-  fontSize: 14,
-  fontFamily: C.mono,
-  cursor: 'pointer',
+  flex: 1, padding: '14px 20px', background: C.teal,
+  color: C.bg, border: 'none', borderRadius: 12,
+  fontSize: 14, fontFamily: C.mono, fontWeight: 700,
+  cursor: 'pointer', letterSpacing: 0.5,
 }

@@ -32,7 +32,7 @@ async function tick(getState) {
     const morningKey = `morning_${today}`
     if (hour === 7 && minute < 5 && !firedKeys.has(morningKey)) {
       firedKeys.add(morningKey)
-      notify('Morning, Vasco.', `Day ${state.profile?.currentStreak || 1}. Let's ship it.`, { tag: 'maya-morning' })
+      notify('Morning.', `Day ${state.profile?.currentStreak || 1}. Let's ship it.`, { tag: 'maya-morning' })
     }
 
     // 2. Evening wrap at 8pm

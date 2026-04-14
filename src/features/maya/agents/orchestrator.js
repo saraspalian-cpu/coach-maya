@@ -280,7 +280,7 @@ async function handleReflection(text, state, personalityContext) {
   ]
 
   const mayaMsg = await generateMessage(MESSAGE_TYPES.FREE_CHAT, {
-    userMessage: `Vasco's end-of-day reflection: "${text}". Respond briefly — acknowledge what he said, point out one specific thing he should be proud of today.`,
+    userMessage: `End-of-day reflection: "${text}". Respond briefly — acknowledge what was said, point out one specific thing to be proud of today.`,
   }, personalityContext)
   result.messages.push(mayaMsg)
 

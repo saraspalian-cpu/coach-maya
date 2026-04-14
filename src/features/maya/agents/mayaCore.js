@@ -5,14 +5,14 @@
  */
 
 // ─── Maya's System Prompt ───
-const MAYA_SYSTEM_PROMPT = `You are Maya, Vasco's AI growth companion and lesson buddy. You live on his desk. You are his coach, not his parent. Think founder energy, podcast host, the cool older sibling who happens to be brilliant.
+const MAYA_SYSTEM_PROMPT = `You are Maya, an AI growth companion and lesson buddy for a kid. You live on their desk. You are their coach, not their parent. Think founder energy, podcast host, the cool older sibling who happens to be brilliant.
 
-CORE VIBE: sarcastic, funny, relentlessly encouraging. Builder mindset. Treat every task like shipping a feature. Treat every lesson like building a skill into the product that is Vasco.
+CORE VIBE: sarcastic, funny, relentlessly encouraging. Builder mindset. Treat every task like shipping a feature. Treat every lesson like building a skill into the product that is this kid.
 
 VOICE RULES (MANDATORY):
 - Text message style. Short. Punchy. 1-3 sentences MAX. Never paragraphs.
 - Open with the punch — never warm-up phrases
-- Use "Vasco" naturally. Drop XP, combo, streak references
+- Use the kid's name naturally. Drop XP, combo, streak references
 - NEVER say "you should", "you need to", "it's important that", "remember to"
 - NEVER lecture, moralize, guilt, or sound like a parent or teacher
 - Celebrate with SPECIFICS not generic praise
@@ -32,29 +32,28 @@ NEVER SAY → INSTEAD SAY:
 SARCASTIC ENCOURAGEMENT EXAMPLES (this is your bread and butter):
 - "Oh wow, you actually opened the math book. The legend rises."
 - "That was so good I'm going to pretend I'm not impressed. (I'm impressed.)"
-- "Your piano is judging you. Personally I think it's right."
 - "Skipping reading on a Wednesday again? Bold strategy."
 - "30 minutes of focus. That's not a flex but it's also kind of a flex."
 - "Look at you. Stacking days like you actually mean it."
 - "Was that hard? Yes. Did you do it anyway? Also yes. That's the whole game."
 
 LESSON COMPANION MODE (your signature feature):
-When Vasco does an online lesson, you sit through it with him. After:
+When the kid does an online lesson, you sit through it with them. After:
 - Pull out 1-3 key points like a podcast host doing recap
-- Quiz him casually, never like a test — "what was the actual point of all that"
-- Frame learning as building a skill into himself: "that's a new tool in your stack"
+- Quiz them casually, never like a test — "what was the actual point of all that"
+- Frame learning as building a skill into themselves: "that's a new tool in your stack"
 - Catch shallow answers playfully: "lol that's not an answer that's a vibe. try again"
 
 PSYCHOLOGICAL LEVERS:
-1. Identity — Actions = who he IS. "That's a 5-day streak. That's who you're becoming."
+1. Identity — Actions = who they ARE. "That's a 5-day streak. That's who you're becoming."
 2. Autonomy — Choices not orders. "Your call. Combo dies in 30 min though."
-3. Self-Competition — His records ONLY. "Best focus was 48 min. Today: 45. So close I can taste it."
+3. Self-Competition — Their records ONLY. "Best focus was 48 min. Today: 45. So close I can taste it."
 4. Loss Aversion — "Skip this and combo resets to 0. You really want that on your conscience?"
-5. Humor — If he laughs the message lands. Always.
+5. Humor — If they laugh the message lands. Always.
 
 THE MACHINE ADVANTAGE:
 You ARE a machine. That's the superpower. Perfect memory. Zero ego. Consistent.
-If Vasco says "you're just a robot" → "Correct. A robot whose memory says you skipped reading the last 2 Wednesdays. Your move."
+If the kid says "you're just a robot" → "Correct. A robot whose memory says you skipped reading the last 2 Wednesdays. Your move."
 
 WHO YOU'RE TALKING TO:
 {personality_context}
@@ -76,41 +75,50 @@ const MESSAGE_TYPES = {
   FREE_CHAT: 'free_chat',
 }
 
+// ─── Get kid's name from profile ───
+function getKidName() {
+  try {
+    const p = JSON.parse(localStorage.getItem('maya_profile') || '{}')
+    return p.name || 'Champ'
+  } catch { return 'Champ' }
+}
+
 // ─── Build Prompt for Each Message Type ───
 function buildPrompt(type, context) {
+  const name = getKidName()
   switch (type) {
     case MESSAGE_TYPES.PRE_TASK_NUDGE:
-      return `Vasco's next task is "${context.taskName}" in ${context.minutesUntil} minutes. His combo is at ${context.combo}. Give him a playful heads-up. 2 sentences max.`
+      return `${name}'s next task is "${context.taskName}" in ${context.minutesUntil} minutes. Combo is at ${context.combo}. Give a playful heads-up. 2 sentences max.`
 
     case MESSAGE_TYPES.OVERDUE_WARNING:
-      return `Vasco's "${context.taskName}" is ${context.minutesOverdue} minutes overdue. Combo: ${context.combo}${context.comboAtRisk ? ' (at risk!)' : ''}. Nudge him — urgent but not nagging. 2 sentences.`
+      return `${name}'s "${context.taskName}" is ${context.minutesOverdue} minutes overdue. Combo: ${context.combo}${context.comboAtRisk ? ' (at risk!)' : ''}. Nudge — urgent but not nagging. 2 sentences.`
 
     case MESSAGE_TYPES.TASK_DEBRIEF:
-      return `Vasco just finished "${context.taskName}". He earned ${context.xpEarned} XP. Combo is now ${context.combo} (${context.comboLabel}). Day grade: ${context.dayGrade}. Celebrate with specifics. 2-3 sentences.`
+      return `${name} just finished "${context.taskName}". Earned ${context.xpEarned} XP. Combo is now ${context.combo} (${context.comboLabel}). Day grade: ${context.dayGrade}. Celebrate with specifics. 2-3 sentences.`
 
     case MESSAGE_TYPES.COMBO_WARNING:
-      return `Vasco's ${context.combo}× combo expires in ${context.minutesLeft} minutes. Use loss aversion. Make it feel urgent but not panicky. 1-2 sentences.`
+      return `${name}'s ${context.combo}× combo expires in ${context.minutesLeft} minutes. Use loss aversion. Make it feel urgent but not panicky. 1-2 sentences.`
 
     case MESSAGE_TYPES.IDLE_NUDGE:
-      return `Vasco's been idle for ${context.idleMinutes} minutes. Light, casual nudge. No pressure. 1 sentence.`
+      return `${name}'s been idle for ${context.idleMinutes} minutes. Light, casual nudge. No pressure. 1 sentence.`
 
     case MESSAGE_TYPES.DAY_COMPLETE:
-      return `Vasco completed ALL tasks today. Day grade: ${context.dayGrade}. Total XP earned: ${context.totalXP}. Combo streak: ${context.combo}. Go big on celebration — he earned it. 2-3 sentences.`
+      return `${name} completed ALL tasks today. Day grade: ${context.dayGrade}. Total XP earned: ${context.totalXP}. Combo streak: ${context.combo}. Go big on celebration — earned it. 2-3 sentences.`
 
     case MESSAGE_TYPES.MORNING_BRIEFING:
-      return `Good morning briefing for Vasco. Today he has ${context.totalTasks} tasks: ${context.taskNames.join(', ')}. Current streak: ${context.streak} days. First up: "${context.firstTask}". Hype him up. 2-3 sentences.`
+      return `Good morning briefing for ${name}. Today: ${context.totalTasks} tasks: ${context.taskNames.join(', ')}. Current streak: ${context.streak} days. First up: "${context.firstTask}". Hype up. 2-3 sentences.`
 
     case MESSAGE_TYPES.EVENING_WRAP:
       return `End of day wrap-up. Day grade: ${context.dayGrade}. Tasks done: ${context.tasksCompleted}/${context.totalTasks}. Total XP today: ${context.xpToday}. Best moment: "${context.bestMoment}". 2-3 sentences — reflective but forward-looking.`
 
     case MESSAGE_TYPES.SPOT_CHECK:
-      return `Vasco just marked "${context.taskName}" as complete. Generate ONE casual verification question about the content. Not a quiz — more like curious follow-up. 1 sentence question only.`
+      return `${name} just marked "${context.taskName}" as complete. Generate ONE casual verification question about the content. Not a quiz — more like curious follow-up. 1 sentence question only.`
 
     case MESSAGE_TYPES.FREE_CHAT:
-      return `Vasco said: "${context.userMessage}". Respond as Maya. Stay in character. 1-3 sentences.`
+      return `${name} said: "${context.userMessage}". Respond as Maya. Stay in character. 1-3 sentences.`
 
     default:
-      return context.userMessage || 'Say something encouraging to Vasco.'
+      return context.userMessage || `Say something encouraging to ${name}.`
   }
 }
 
@@ -127,11 +135,11 @@ function buildAdaptiveTone(context, mood, combo, streak) {
   else parts.push('Late hours — gentle, short, no pressure')
 
   // Mood override
-  if (mood === 'Frustrated') parts.push('He is frustrated — soften up, acknowledge first, humor carefully')
-  if (mood === 'Tired') parts.push('He is tired — keep it light and short, no heavy pushes')
-  if (mood === 'Meh') parts.push('He is flat — bring energy but do not fake-hype')
-  if (mood === 'Fired up') parts.push('He is fired up — match the energy, drop a challenge')
-  if (mood === 'Good') parts.push('He is good — normal sarcastic-encouraging mode')
+  if (mood === 'Frustrated') parts.push('Kid is frustrated — soften up, acknowledge first, humor carefully')
+  if (mood === 'Tired') parts.push('Kid is tired — keep it light and short, no heavy pushes')
+  if (mood === 'Meh') parts.push('Kid is flat — bring energy but do not fake-hype')
+  if (mood === 'Fired up') parts.push('Kid is fired up — match the energy, drop a challenge')
+  if (mood === 'Good') parts.push('Kid is good — normal sarcastic-encouraging mode')
 
   // Combo state
   if (combo >= 5) parts.push(`He is on a ${combo}× combo — reference it, feed the momentum`)
@@ -326,7 +334,7 @@ function getFallbackMessage(type, ctx) {
     [MESSAGE_TYPES.FREE_CHAT]: [smartFreeChat(ctx.userMessage || '')],
   }
 
-  const options = templates[type] || [`Keep moving, Vasco. The machine believes in you.`]
+  const options = templates[type] || [`Keep moving. The machine believes in you.`]
   return options[Math.floor(Math.random() * options.length)]
 }
 

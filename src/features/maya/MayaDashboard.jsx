@@ -69,7 +69,7 @@ export default function MayaDashboard({ onOpenSearch }) {
     if (localStorage.getItem(todayKey)) return
     const t = setTimeout(() => {
       const hour = new Date().getHours()
-      const name = profile?.name || 'Vasco'
+      const name = profile?.name || 'Champ'
       const opener = hour < 11
         ? `Morning, ${name}. Day ${profile?.currentStreak || 1} of the streak. Let's lock in.`
         : hour < 17
@@ -191,7 +191,7 @@ export default function MayaDashboard({ onOpenSearch }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div>
             <div style={{ fontSize: 10, color: C.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              {profile?.name || 'Vasco'}'s HQ
+              {profile?.name || 'Champ'}'s HQ
             </div>
             <div style={{
               fontFamily: C.display,

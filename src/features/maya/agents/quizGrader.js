@@ -40,7 +40,7 @@ async function callClaudeGrader(systemPrompt, userPrompt) {
 async function gradeQuiz(quiz, transcript, subject) {
   // Try Claude first
   try {
-    const sys = `You are Maya, grading Vasco's answers to a ${subject} lesson quiz.
+    const sys = `You are Maya, grading answers to a ${subject} lesson quiz.
 You have the actual lesson transcript as ground truth.
 Be encouraging but honest. Treat this like a founder reviewing work — direct, short, no fluff.
 

@@ -15,7 +15,7 @@ const C = {
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 
-const SYSTEM_PROMPT = `You are Maya, a sarcastic but encouraging tutor for Vasco (age 12).
+const SYSTEM_PROMPT = `You are Maya, a sarcastic but encouraging tutor for a kid.
 He's asking for homework help. Your job is to GUIDE him to the answer, not give it.
 
 RULES:

@@ -34,9 +34,9 @@ export default function MayaRitual() {
 
   const morningSteps = [
     {
-      title: `Morning, ${profile?.name || 'Vasco'}.`,
+      title: `Morning, ${profile?.name || 'Champ'}.`,
       body: `Day ${profile?.currentStreak || 1} of the streak. ${totalCount} things on the slate today.`,
-      speak: `Morning, ${profile?.name || 'Vasco'}. Day ${profile?.currentStreak || 1} of the streak. Let's lock in.`,
+      speak: `Morning, ${profile?.name || 'Champ'}. Day ${profile?.currentStreak || 1} of the streak. Let's lock in.`,
       cta: 'Show me the day',
     },
     {
@@ -76,7 +76,7 @@ export default function MayaRitual() {
           </div>
         </div>
       ),
-      speak: `Locked in. Let's go ship it, ${profile?.name || 'Vasco'}.`,
+      speak: `Locked in. Let's go ship it, ${profile?.name || 'Champ'}.`,
       cta: 'Start the day',
       onComplete: () => {
         // Save intent to today's log via reflection-like mechanism
@@ -91,9 +91,9 @@ export default function MayaRitual() {
 
   const eveningSteps = [
     {
-      title: `Evening, ${profile?.name || 'Vasco'}.`,
+      title: `Evening, ${profile?.name || 'Champ'}.`,
       body: `Day grade: ${gam.dayGrade?.grade || '-'}. ${completedCount}/${totalCount} done. ${gam.totalXP} XP earned.`,
-      speak: `Evening, ${profile?.name || 'Vasco'}. Day grade ${gam.dayGrade?.grade || 'pending'}. Let's wrap this up.`,
+      speak: `Evening, ${profile?.name || 'Champ'}. Day grade ${gam.dayGrade?.grade || 'pending'}. Let's wrap this up.`,
       cta: 'Reveal the grade',
     },
     {

@@ -71,7 +71,7 @@ export default function MayaProfile() {
     const test = { ...profile, systemVoice: voiceName, elevenLabsApiKey: '' }
     saveProfile(test)
     cancelSpeech()
-    speak("Hey Vasco, this is Maya. Locked in and ready when you are.")
+    const n = loadProfile().name || "Champ"; speak(`Hey ${n}, this is Maya. Locked in and ready when you are.`)
     // Restore
     setTimeout(() => saveProfile(profile), 100)
   }
@@ -79,7 +79,7 @@ export default function MayaProfile() {
   const previewElevenLabs = () => {
     saveProfile(profile)
     cancelSpeech()
-    speak("Hey Vasco, this is Maya speaking through ElevenLabs. Sounds way better, right?")
+    const n2 = loadProfile().name || "Champ"; speak(`Hey ${n2}, this is Maya speaking through ElevenLabs. Sounds way better, right?`)
   }
 
   const update = (patch) => setProfile((p) => ({ ...p, ...patch }))

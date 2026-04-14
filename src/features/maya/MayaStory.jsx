@@ -18,7 +18,7 @@ export default function MayaStory() {
   // Maya speaks the opening line
   useEffect(() => {
     const t = setTimeout(() => {
-      const opening = `Here's your story so far, ${maya.profile?.name || 'Vasco'}. Take a minute. This matters.`
+      const opening = `Here's your story so far, ${maya.profile?.name || 'Champ'}. Take a minute. This matters.`
       maya.speakText(opening)
     }, 400)
     return () => clearTimeout(t)

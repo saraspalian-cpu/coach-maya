@@ -1,17 +1,17 @@
 /**
- * Profile storage — Vasco's identity and preferences.
+ * Profile storage — kid's identity and preferences.
  * The personality learner adds to this over time.
  */
 
 const PROFILE_KEY = 'maya_profile'
-const PROFILE_VERSION = 2
+const PROFILE_VERSION = 3
 
 const DEFAULT_PROFILE = {
   version: PROFILE_VERSION,
   // Identity
-  name: 'Vasco',
+  name: '',
   age: 12,
-  pronouns: 'he/him',
+  pronouns: '',
   // Goals & motivation
   bigGoals: [],         // ["Make varsity tennis", "Learn piano sonata"]
   hobbies: [],          // ["Tennis", "Piano", "Gaming", "Drawing"]
@@ -38,6 +38,8 @@ const DEFAULT_PROFILE = {
   worksOn: [],         // tactics that landed
   avoids: [],          // tactics that backfired
   patterns: {},        // {wednesday_reading: "tends to skip"}
+  // Parent access
+  parentPin: '',
   // Onboarding
   setupComplete: false,
   setupAt: null,
@@ -73,7 +75,7 @@ function updateProfile(patch) {
 
 /**
  * Build the personality_context string injected into Maya's system prompt.
- * This is what makes Maya feel like she KNOWS Vasco.
+ * This is what makes Maya feel like she KNOWS this kid.
  */
 function buildPersonalityContext(profile) {
   if (!profile) return ''
@@ -86,7 +88,7 @@ function buildPersonalityContext(profile) {
   lines.push(`Humor style: ${profile.humorStyle}. Push intensity: ${profile.pushIntensity}. Main driver: ${profile.motivationDriver}.`)
   if (profile.currentStreak) lines.push(`Current streak: ${profile.currentStreak} days. Longest: ${profile.longestStreak}.`)
   if (profile.insideJokes?.length) lines.push(`Inside jokes you've earned: ${profile.insideJokes.join(' | ')}.`)
-  if (profile.worksOn?.length) lines.push(`Tactics that work on him: ${profile.worksOn.slice(-5).join('; ')}.`)
+  if (profile.worksOn?.length) lines.push(`Tactics that work: ${profile.worksOn.slice(-5).join('; ')}.`)
   if (profile.avoids?.length) lines.push(`Don't do: ${profile.avoids.slice(-5).join('; ')}.`)
   return lines.join(' ')
 }
