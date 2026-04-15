@@ -8,6 +8,7 @@ import BottomNav from './features/maya/components/BottomNav'
 import VoiceFab from './features/maya/components/VoiceFab'
 import ErrorBoundary from './features/maya/components/ErrorBoundary'
 import { loadProfile } from './features/maya/lib/profile'
+import { registerServiceWorker, scheduleDailyNotifications, getPermission } from './lib/push'
 
 // Eager: dashboard (needed immediately)
 import MayaDashboard from './features/maya/MayaDashboard'
@@ -48,6 +49,9 @@ const MayaWater = lazy(() => import('./features/maya/MayaWater'))
 const MayaWorkout = lazy(() => import('./features/maya/MayaWorkout'))
 const MayaMoodBoard = lazy(() => import('./features/maya/MayaMoodBoard'))
 const MayaWeekly = lazy(() => import('./features/maya/MayaWeekly'))
+const MayaLogin = lazy(() => import('./features/maya/MayaLogin'))
+const MayaSignup = lazy(() => import('./features/maya/MayaSignup'))
+const MayaChildren = lazy(() => import('./features/maya/MayaChildren'))
 
 function Loading() {
   return (
@@ -118,6 +122,9 @@ function GatedRoutes() {
           <Route path="/workout" element={<MayaWorkout />} />
           <Route path="/moods" element={<MayaMoodBoard />} />
           <Route path="/weekly" element={<MayaWeekly />} />
+          <Route path="/login" element={<MayaLogin />} />
+          <Route path="/signup" element={<MayaSignup />} />
+          <Route path="/children" element={<MayaChildren />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
@@ -131,6 +138,16 @@ function GatedRoutes() {
 }
 
 export default function App() {
+  useEffect(() => {
+    // Register service worker + schedule notifications
+    registerServiceWorker().then(() => {
+      if (getPermission() === 'granted') {
+        const profile = loadProfile()
+        scheduleDailyNotifications(profile)
+      }
+    })
+  }, [])
+
   return (
     <ErrorBoundary>
       <MayaProvider>

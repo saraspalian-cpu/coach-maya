@@ -53,7 +53,7 @@ self.addEventListener('fetch', (e) => {
   )
 })
 
-// Push notifications (when wired up later)
+// ─── Push Notifications ───
 self.addEventListener('push', (event) => {
   const data = (() => { try { return event.data?.json() } catch { return {} } })() || {}
   const title = data.title || 'Coach Maya'
@@ -63,11 +63,47 @@ self.addEventListener('push', (event) => {
     badge: '/icon-192.png',
     tag: data.tag || 'maya-nudge',
     data: data.url || '/',
+    vibrate: [100, 50, 100],
+    actions: data.actions || [
+      { action: 'open', title: 'Open Maya' },
+      { action: 'dismiss', title: 'Later' },
+    ],
   }
   event.waitUntil(self.registration.showNotification(title, options))
 })
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  event.waitUntil(clients.openWindow(event.notification.data || '/'))
+  const url = event.notification.data || '/'
+
+  if (event.action === 'dismiss') return
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin)) {
+          client.navigate(url)
+          return client.focus()
+        }
+      }
+      return clients.openWindow(url)
+    })
+  )
+})
+
+// ─── Scheduled local notifications (triggered by main thread) ───
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SCHEDULE_NOTIFICATION') {
+    const { delay, title, body, tag, url } = event.data
+    setTimeout(() => {
+      self.registration.showNotification(title || 'Coach Maya', {
+        body: body || 'Time to check in.',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: tag || 'maya-scheduled',
+        data: url || '/',
+        vibrate: [100, 50, 100],
+      })
+    }, delay || 0)
+  }
 })
