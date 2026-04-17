@@ -292,6 +292,9 @@ export default function MayaDashboard({ onOpenSearch }) {
         </div>
       )}
 
+      {/* ─── Next Competition Countdown ─── */}
+      <NextCompWidget navigate={navigate} />
+
       {/* ─── Weekly Challenge ─── */}
       <WeeklyChallenge />
 
@@ -810,6 +813,8 @@ function NavRow({ navigate }) {
     { icon: '💜', label: 'Moods', to: '/moods' },
     { icon: '📋', label: 'Weekly', to: '/weekly' },
     { icon: '🏆', label: 'Comps', to: '/competitions' },
+    { icon: '📝', label: 'Prep', to: '/prep' },
+    { icon: '📊', label: 'Analytics', to: '/analytics' },
     { icon: '🧿', label: 'Intel', to: '/intel' },
     { icon: '🏅', label: 'Records', to: '/records' },
     { icon: '📰', label: 'News', to: '/news' },
@@ -1010,6 +1015,53 @@ function IconBtn({ children, onClick, title }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
     >{children}</button>
+  )
+}
+
+function NextCompWidget({ navigate }) {
+  const comps = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem('maya_competitions')) || [] } catch { return [] }
+  }, [])
+  const today = new Date().toISOString().slice(0, 10)
+  const upcoming = comps.filter(c => c.date >= today).sort((a, b) => a.date.localeCompare(b.date))
+  const next = upcoming[0]
+  if (!next) return null
+
+  const daysLeft = Math.ceil((new Date(next.date) - new Date(today)) / 86400000)
+  const catIcons = { math: '🧮', piano: '🎹', tennis: '🎾', coding: '💻', speech: '🎤', other: '🏅' }
+  const urgentColor = daysLeft <= 7 ? C.red : daysLeft <= 21 ? C.amber : C.teal
+
+  return (
+    <div
+      onClick={() => navigate('/competitions')}
+      style={{
+        padding: '12px 16px',
+        background: `rgba(255,215,0,0.04)`,
+        backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+        borderBottom: `1px solid ${C.glassBorder}`,
+        display: 'flex', alignItems: 'center', gap: 12,
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{
+        width: 48, height: 48, borderRadius: 14,
+        background: urgentColor + '15', border: `1px solid ${urgentColor}44`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: C.display, fontSize: 22, color: urgentColor,
+      }}>{daysLeft}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 9, color: C.gold, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+          Next competition
+        </div>
+        <div style={{ fontSize: 13, color: C.text, fontWeight: 600, marginTop: 2 }}>
+          {catIcons[next.category] || '🏅'} {next.name}
+        </div>
+        <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>
+          {next.date} · {daysLeft === 0 ? 'TODAY' : `${daysLeft} days away`}
+        </div>
+      </div>
+      <div style={{ fontSize: 14, color: C.muted }}>→</div>
+    </div>
   )
 }
 
