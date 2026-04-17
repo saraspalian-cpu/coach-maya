@@ -7,9 +7,9 @@ import { useNavigate } from 'react-router-dom'
 import { logIn } from '../../lib/auth'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
-  border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
-  dim: '#3a4f6a', teal: '#2DD4BF', red: '#EF4444',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
+  border: 'rgba(255,255,255,0.12)', text: '#f0f0f5', muted: '#6b6b8a',
+  dim: '#3a3a55', teal: '#2DD4BF', red: '#F87171',
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 
@@ -110,7 +110,7 @@ export default function MayaLogin() {
 
 const inputStyle = {
   width: '100%', padding: '14px 16px', marginTop: 6,
-  background: '#0c1624', border: '1px solid #1a2a3e', borderRadius: 12,
-  color: '#e8edf3', fontSize: 14, fontFamily: "'IBM Plex Mono', monospace",
+  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12,
+  color: '#f0f0f5', fontSize: 14, fontFamily: "'IBM Plex Mono', monospace",
   outline: 'none', boxSizing: 'border-box',
 }

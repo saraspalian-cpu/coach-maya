@@ -9,14 +9,14 @@ import { setActiveChild, pushToCloud, pullFromCloud } from '../../lib/storage'
 import { isCloudEnabled } from '../../lib/supabase'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
-  border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
-  dim: '#3a4f6a', teal: '#2DD4BF', red: '#EF4444',
-  green: '#22C55E', gold: '#FFD700', blue: '#7db8e8',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
+  border: 'rgba(255,255,255,0.12)', text: '#f0f0f5', muted: '#6b6b8a',
+  dim: '#3a3a55', teal: '#2DD4BF', red: '#F87171',
+  green: '#34D399', gold: '#FFD700', blue: '#93C5FD',
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 
-const CHILD_COLORS = ['#2DD4BF', '#A78BFA', '#F472B6', '#FF6B35', '#7db8e8', '#FFD700']
+const CHILD_COLORS = ['#2DD4BF', '#A78BFA', '#F472B6', '#FF6B35', '#93C5FD', '#FFD700']
 
 export default function MayaChildren() {
   const navigate = useNavigate()
@@ -238,14 +238,14 @@ export default function MayaChildren() {
 
 const inputStyle = {
   width: '100%', padding: '14px 16px',
-  background: '#060c18', border: '1px solid #1a2a3e', borderRadius: 12,
-  color: '#e8edf3', fontSize: 14, fontFamily: "'IBM Plex Mono', monospace",
+  background: '#0a0a14', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12,
+  color: '#f0f0f5', fontSize: 14, fontFamily: "'IBM Plex Mono', monospace",
   outline: 'none', boxSizing: 'border-box',
 }
 const stepBtn = {
   width: 36, height: 36, borderRadius: 8,
-  background: '#121e30', border: '1px solid #1a2a3e',
-  color: '#e8edf3', fontSize: 18, cursor: 'pointer',
+  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+  color: '#f0f0f5', fontSize: 18, cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   fontFamily: "'IBM Plex Mono', monospace",
 }

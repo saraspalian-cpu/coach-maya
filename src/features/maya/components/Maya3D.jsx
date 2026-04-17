@@ -33,10 +33,10 @@ class AvatarErrorBoundary extends Component {
 
 const STATE_GLOWS = {
   idle:        '#2DD4BF',
-  speaking:    '#7db8e8',
+  speaking:    '#93C5FD',
   celebrating: '#FFD700',
-  urgent:      '#EF4444',
-  sleeping:    '#6b7f99',
+  urgent:      '#F87171',
+  sleeping:    '#6b6b8a',
   thinking:    '#A78BFA',
 }
 

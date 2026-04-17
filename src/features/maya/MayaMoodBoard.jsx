@@ -4,17 +4,18 @@
  */
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { loadMoods } from './lib/moods'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
-  border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
-  dim: '#3a4f6a', teal: '#2DD4BF', pink: '#F472B6',
-  green: '#22C55E', gold: '#FFD700', amber: '#FFA500',
-  red: '#EF4444', blue: '#7db8e8', purple: '#A78BFA',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
+  border: 'rgba(255,255,255,0.06)', glassBorder: 'rgba(255,255,255,0.14)',
+  text: '#f0f0f5', muted: '#6b6b8a', dim: '#3a3a55',
+  teal: '#2DD4BF', pink: '#F472B6', green: '#34D399',
+  gold: '#FFD700', amber: '#FBBF24', red: '#F87171',
+  blue: '#93C5FD', purple: '#A78BFA',
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
+  glass: 'rgba(255,255,255,0.08)', blur: 'blur(20px)',
 }
-
-const MOOD_KEY = 'maya_moods'
 
 const MOOD_CONFIG = {
   'Fired up':    { emoji: '🔥', color: C.gold,   score: 5 },
@@ -22,20 +23,6 @@ const MOOD_CONFIG = {
   'Meh':         { emoji: '😐', color: C.amber,  score: 3 },
   'Frustrated':  { emoji: '😤', color: C.red,    score: 2 },
   'Tired':       { emoji: '😴', color: C.purple, score: 1 },
-}
-
-export function loadMoods() {
-  try { return JSON.parse(localStorage.getItem(MOOD_KEY)) || [] } catch { return [] }
-}
-export function saveMood(mood) {
-  try {
-    const moods = loadMoods()
-    const today = new Date().toISOString().slice(0, 10)
-    // Only one mood per day — replace if exists
-    const filtered = moods.filter(m => m.date !== today)
-    filtered.unshift({ mood, date: today, time: new Date().toISOString() })
-    localStorage.setItem(MOOD_KEY, JSON.stringify(filtered.slice(0, 365)))
-  } catch {}
 }
 
 export default function MayaMoodBoard() {

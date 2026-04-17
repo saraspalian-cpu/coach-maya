@@ -8,10 +8,10 @@ import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
-  border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
-  dim: '#3a4f6a', teal: '#2DD4BF', red: '#EF4444',
-  green: '#22C55E', gold: '#FFD700', amber: '#FFA500',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
+  border: 'rgba(255,255,255,0.12)', text: '#f0f0f5', muted: '#6b6b8a',
+  dim: '#3a3a55', teal: '#2DD4BF', red: '#F87171',
+  green: '#34D399', gold: '#FFD700', amber: '#FBBF24',
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 

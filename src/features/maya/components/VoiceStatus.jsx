@@ -7,9 +7,9 @@ import { loadProfile } from '../lib/profile'
 import { speak, cancelSpeech } from '../lib/voice'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
-  border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
-  green: '#22C55E', amber: '#FFA500', red: '#EF4444', teal: '#2DD4BF',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
+  border: 'rgba(255,255,255,0.12)', text: '#f0f0f5', muted: '#6b6b8a',
+  green: '#34D399', amber: '#FBBF24', red: '#F87171', teal: '#2DD4BF',
   mono: "'IBM Plex Mono', monospace",
 }
 
@@ -102,20 +102,20 @@ function getStatus() {
 
   if (hasKey && hasVoice) {
     return {
-      color: '#22C55E',
+      color: '#34D399',
       label: '✓ ElevenLabs ACTIVE',
       detail: `Voice ID: ${profile.elevenLabsVoiceId.slice(0, 8)}... — Maya will sound human. If she still sounds robotic, the API call may be failing — tap Test below.`,
     }
   }
   if (hasKey && !hasVoice) {
     return {
-      color: '#FFA500',
+      color: '#FBBF24',
       label: '⚠ Key set but NO VOICE picked',
       detail: 'You have an API key but no voice ID. Default Drew voice will be used. Tap a voice preset below to pick one explicitly.',
     }
   }
   return {
-    color: '#EF4444',
+    color: '#F87171',
     label: '✗ Using SYSTEM voice (robotic)',
     detail: 'No ElevenLabs API key set. Maya is using your laptop\'s built-in voice. Add a key from elevenlabs.io below to make her sound human.',
   }

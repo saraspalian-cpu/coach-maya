@@ -12,8 +12,8 @@ const C = {
   bg: 'rgba(6, 12, 24, 0.96)',
   gold: '#FFD700',
   teal: '#2DD4BF',
-  text: '#e8edf3',
-  muted: '#6b7f99',
+  text: '#f0f0f5',
+  muted: '#6b6b8a',
   mono: "'IBM Plex Mono', monospace",
   display: "'Bebas Neue', sans-serif",
 }
@@ -89,7 +89,7 @@ function Confetti() {
         const left = Math.random() * 100
         const delay = Math.random() * 400
         const dur = 1800 + Math.random() * 1200
-        const color = [C.gold, C.teal, '#ef4444', '#7db8e8'][i % 4]
+        const color = [C.gold, C.teal, '#ef4444', '#93C5FD'][i % 4]
         const size = 6 + Math.random() * 6
         return (
           <div key={i} style={{

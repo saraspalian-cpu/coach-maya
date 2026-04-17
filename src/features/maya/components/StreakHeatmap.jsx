@@ -6,9 +6,9 @@ import { useMemo } from 'react'
 import { loadHistory } from '../agents/lessonAnalyst'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624',
-  border: '#1a2a3e', muted: '#6b7f99',
-  teal: '#2DD4BF', dim: '#1a2a3e',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)',
+  border: 'rgba(255,255,255,0.12)', muted: '#6b6b8a',
+  teal: '#2DD4BF', dim: 'rgba(255,255,255,0.12)',
 }
 
 export default function StreakHeatmap({ size = 12 }) {

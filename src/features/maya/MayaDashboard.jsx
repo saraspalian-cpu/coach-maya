@@ -24,22 +24,28 @@ function AvatarFallback({ size }) {
 }
 
 const C = {
-  bg: '#060c18',
-  surface: '#0c1624',
-  surfaceLight: '#121e30',
-  border: '#1a2a3e',
-  text: '#e8edf3',
-  muted: '#6b7f99',
-  dim: '#3a4f6a',
+  bg: '#0a0a14',
+  surface: 'rgba(255,255,255,0.04)',
+  surfaceSolid: '#12121e',
+  surfaceLight: 'rgba(255,255,255,0.07)',
+  glass: 'rgba(255,255,255,0.08)',
+  glassBorder: 'rgba(255,255,255,0.14)',
+  border: 'rgba(255,255,255,0.08)',
+  borderLight: 'rgba(255,255,255,0.18)',
+  text: '#f0f0f5',
+  muted: '#6b6b8a',
+  dim: '#3a3a55',
   gold: '#FFD700',
-  amber: '#FFA500',
-  green: '#22C55E',
-  red: '#EF4444',
-  blue: '#7db8e8',
+  amber: '#FBBF24',
+  green: '#34D399',
+  red: '#F87171',
+  blue: '#93C5FD',
   teal: '#2DD4BF',
   purple: '#A78BFA',
+  pink: '#F472B6',
   mono: "'IBM Plex Mono', monospace",
   display: "'Bebas Neue', sans-serif",
+  blur: 'blur(20px)',
 }
 
 const gradeColors = { S: C.gold, A: C.green, B: C.blue, C: C.amber, F: C.red, '-': C.dim }
@@ -112,16 +118,40 @@ export default function MayaDashboard({ onOpenSearch }) {
   return (
     <div style={{
       minHeight: '100vh',
-      background: C.bg,
+      background: 'transparent',
       color: C.text,
       fontFamily: C.mono,
       paddingBottom: 80,
+      position: 'relative',
+      overflow: 'hidden',
     }}>
+      {/* ─── Ambient Orbs — bright colorful blobs behind glass ─── */}
+      <div style={{
+        position: 'fixed', top: -60, right: -40, width: 350, height: 350,
+        borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.6) 0%, rgba(167,139,250,0.2) 40%, transparent 70%)',
+        filter: 'blur(50px)', pointerEvents: 'none', zIndex: 0,
+      }} />
+      <div style={{
+        position: 'fixed', bottom: 120, left: -40, width: 300, height: 300,
+        borderRadius: '50%', background: 'radial-gradient(circle, rgba(45,212,191,0.5) 0%, rgba(45,212,191,0.15) 40%, transparent 70%)',
+        filter: 'blur(50px)', pointerEvents: 'none', zIndex: 0,
+      }} />
+      <div style={{
+        position: 'fixed', top: '50%', right: -30, width: 250, height: 250,
+        borderRadius: '50%', background: 'radial-gradient(circle, rgba(244,114,182,0.45) 0%, rgba(244,114,182,0.1) 40%, transparent 70%)',
+        filter: 'blur(50px)', pointerEvents: 'none', zIndex: 0,
+      }} />
+      <div style={{
+        position: 'fixed', top: '20%', left: '30%', width: 200, height: 200,
+        borderRadius: '50%', background: 'radial-gradient(circle, rgba(251,191,36,0.2) 0%, transparent 60%)',
+        filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0,
+      }} />
+
       {/* ─── Maya Avatar Hero ─── */}
       <div style={{
-        background: `radial-gradient(ellipse at center top, ${C.surfaceLight} 0%, ${C.bg} 70%)`,
-        padding: '12px 0 4px',
-        borderBottom: `1px solid ${C.border}`,
+        background: `radial-gradient(ellipse at center top, rgba(167,139,250,0.12) 0%, transparent 60%)`,
+        padding: '16px 0 8px',
+        borderBottom: `1px solid ${C.glassBorder}`,
         position: 'relative',
       }}>
         <Suspense fallback={<AvatarFallback size={300} />}>
@@ -185,23 +215,22 @@ export default function MayaDashboard({ onOpenSearch }) {
       {/* ─── Stats Header ─── */}
       <div style={{
         padding: '12px 16px',
-        borderBottom: `1px solid ${C.border}`,
-        background: C.surface,
+        borderBottom: `1px solid ${C.glassBorder}`,
+        background: C.glass,
+        backdropFilter: C.blur,
+        WebkitBackdropFilter: C.blur,
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: 10, color: C.muted, letterSpacing: 1, textTransform: 'uppercase' }}>
-              {profile?.name || 'Champ'}'s HQ
-            </div>
             <div style={{
               fontFamily: C.display,
-              fontSize: 26,
+              fontSize: 24,
               letterSpacing: 2,
               color: C.teal,
               lineHeight: 1,
-              marginTop: 2,
+              textShadow: '0 0 20px rgba(45,212,191,0.3)',
             }}>
-              {(profile?.name || 'VASCO').toUpperCase()}'S HQ
+              {(profile?.name || 'CHAMP').toUpperCase()}'S HQ
             </div>
           </div>
           <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -220,13 +249,14 @@ export default function MayaDashboard({ onOpenSearch }) {
             <span>LVL {gam.level?.level} — {gam.totalXP} XP</span>
             <span>{gam.level?.xpToNext > 0 ? `${gam.level.xpToNext} to next` : 'MAX'}</span>
           </div>
-          <div style={{ height: 6, background: C.dim, borderRadius: 3, overflow: 'hidden' }}>
+          <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3, overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${(gam.level?.progress || 0) * 100}%`,
-              background: `linear-gradient(90deg, ${C.teal}, ${C.blue})`,
+              background: `linear-gradient(90deg, ${C.teal}, ${C.purple})`,
               borderRadius: 3,
               transition: 'width 0.5s ease',
+              boxShadow: '0 0 8px rgba(45,212,191,0.4)',
             }} />
           </div>
         </div>
@@ -247,8 +277,8 @@ export default function MayaDashboard({ onOpenSearch }) {
         <div
           onClick={() => navigate('/onboarding')}
           style={{
-            padding: '10px 16px', background: C.teal + '11',
-            borderBottom: `1px solid ${C.teal}33`,
+            padding: '10px 16px', background: 'rgba(45,212,191,0.06)',
+            borderBottom: `1px solid rgba(45,212,191,0.15)`,
             display: 'flex', alignItems: 'center', gap: 10,
             cursor: 'pointer',
           }}
@@ -281,23 +311,29 @@ export default function MayaDashboard({ onOpenSearch }) {
       <SmartCTAs navigate={navigate} />
 
       {/* ─── Tab Bar ─── */}
-      <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, background: C.surface }}>
+      <div style={{
+        display: 'flex', borderBottom: `1px solid ${C.glassBorder}`,
+        background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+        padding: '0 4px',
+      }}>
         {['tasks', 'stats', 'chat'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{
               flex: 1,
-              padding: '10px 0',
-              background: 'none',
+              padding: '12px 0',
+              background: activeTab === tab ? 'rgba(45,212,191,0.08)' : 'none',
               border: 'none',
               borderBottom: activeTab === tab ? `2px solid ${C.teal}` : '2px solid transparent',
+              borderRadius: activeTab === tab ? '8px 8px 0 0' : 0,
               color: activeTab === tab ? C.teal : C.muted,
               fontSize: 11,
               fontFamily: C.mono,
               textTransform: 'uppercase',
               letterSpacing: 1,
               cursor: 'pointer',
+              transition: 'all 0.2s ease',
             }}
           >{tab}</button>
         ))}
@@ -453,10 +489,12 @@ function TasksTab({ maya, onSkipRequest }) {
         <div key={task.id} style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '14px 12px',
-          background: task.completed ? C.surfaceLight : C.surface,
-          borderRadius: 10, marginBottom: 8,
-          border: `1px solid ${task.completed ? C.green + '33' : C.border}`,
+          background: task.completed ? 'rgba(52,211,153,0.06)' : C.glass,
+          backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+          borderRadius: 14, marginBottom: 8,
+          border: `1px solid ${task.completed ? 'rgba(52,211,153,0.2)' : C.glassBorder}`,
           opacity: task.skipped ? 0.4 : 1,
+          transition: 'all 0.3s ease',
         }}>
           <button
             onClick={() => !task.completed && !task.skipped && completeTask(task.id)}
@@ -506,7 +544,7 @@ function StatsTab({ maya }) {
   const { gamification: gam, unlockedAchievements, dayLog } = maya
   return (
     <div>
-      <div style={{ padding: 16, background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+      <div style={{ padding: 16, background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur, borderRadius: 14, border: `1px solid ${C.glassBorder}`, marginBottom: 12 }}>
         <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Level Progress</div>
         {LEVELS.map(lvl => {
           const isActive = gam.level?.level === lvl.level
@@ -526,7 +564,7 @@ function StatsTab({ maya }) {
         })}
       </div>
 
-      <div style={{ padding: 16, background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+      <div style={{ padding: 16, background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur, borderRadius: 14, border: `1px solid ${C.glassBorder}`, marginBottom: 12 }}>
         <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Achievements</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {ACHIEVEMENTS.map(a => {
@@ -548,7 +586,7 @@ function StatsTab({ maya }) {
       </div>
 
       {dayLog && dayLog.length > 0 && (
-        <div style={{ padding: 16, background: C.surface, borderRadius: 10, border: `1px solid ${C.border}` }}>
+        <div style={{ padding: 16, background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur, borderRadius: 14, border: `1px solid ${C.glassBorder}` }}>
           <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Today's Activity</div>
           {dayLog.map((entry, i) => (
             <div key={i} style={{
@@ -679,8 +717,8 @@ function DailyContent() {
   return (
     <div style={{
       padding: '10px 16px 14px',
-      borderBottom: `1px solid ${C.border}`,
-      background: C.surface,
+      borderBottom: `1px solid ${C.glassBorder}`,
+      background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
     }}>
       {/* Quote */}
       <div style={{ fontSize: 12, color: C.text, fontStyle: 'italic', lineHeight: 1.5, marginBottom: 6 }}>
@@ -723,8 +761,9 @@ function WeeklyChallenge() {
   return (
     <div style={{
       padding: '12px 16px',
-      background: `linear-gradient(135deg, ${C.gold}11, ${C.surface})`,
-      borderBottom: `1px solid ${C.border}`,
+      background: 'rgba(255,215,0,0.04)',
+      backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+      borderBottom: `1px solid ${C.glassBorder}`,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ fontSize: 24 }}>{ch.icon}</div>
@@ -785,8 +824,8 @@ function NavRow({ navigate }) {
   return (
     <div style={{
       display: 'flex', gap: 8, padding: '10px 16px',
-      overflowX: 'auto', borderBottom: `1px solid ${C.border}`,
-      background: C.surface,
+      overflowX: 'auto', borderBottom: `1px solid ${C.glassBorder}`,
+      background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
     }}>
       {items.map(it => (
         <button
@@ -796,8 +835,9 @@ function NavRow({ navigate }) {
             flex: '0 0 auto', display: 'flex', flexDirection: 'column',
             alignItems: 'center', gap: 4,
             padding: '8px 12px', minWidth: 60,
-            background: C.surfaceLight, border: `1px solid ${C.border}`,
-            borderRadius: 10, color: C.text, fontFamily: C.mono, cursor: 'pointer',
+            background: C.surfaceLight, border: `1px solid ${C.glassBorder}`,
+            borderRadius: 14, color: C.text, fontFamily: C.mono, cursor: 'pointer',
+            transition: 'all 0.2s ease',
           }}
         >
           <div style={{ fontSize: 18 }}>{it.icon}</div>
@@ -821,8 +861,9 @@ function SuggestionCard({ navigate, maya }) {
       onClick={() => navigate(s.action)}
       style={{
         padding: '12px 16px',
-        background: `linear-gradient(135deg, ${C.purple}11, ${C.surface})`,
-        borderBottom: `1px solid ${C.border}`,
+        background: 'rgba(167,139,250,0.05)',
+        backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+        borderBottom: `1px solid ${C.glassBorder}`,
         display: 'flex', alignItems: 'center', gap: 12,
         cursor: 'pointer',
       }}
@@ -857,8 +898,8 @@ function SmartCTAs({ navigate }) {
   return (
     <div style={{
       padding: '8px 16px 14px',
-      borderBottom: `1px solid ${C.border}`,
-      background: C.surface,
+      borderBottom: `1px solid ${C.glassBorder}`,
+      background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
       display: 'flex', gap: 8, overflowX: 'auto',
     }}>
       {ctas.map((c, i) => (
@@ -900,8 +941,9 @@ function LessonCTA({ navigate }) {
   return (
     <div style={{
       padding: '14px 16px',
-      background: `linear-gradient(135deg, ${C.teal}11, ${C.surface})`,
-      borderBottom: `1px solid ${C.border}`,
+      background: 'rgba(45,212,191,0.04)',
+      backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+      borderBottom: `1px solid ${C.glassBorder}`,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -943,12 +985,14 @@ function LessonCTA({ navigate }) {
 function StatBox({ label, value, sub, color }) {
   return (
     <div style={{
-      flex: 1, textAlign: 'center', padding: '8px 4px',
-      background: '#0c1624', borderRadius: 8, border: '1px solid #1a2a3e',
+      flex: 1, textAlign: 'center', padding: '10px 4px',
+      background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+      borderRadius: 14, border: `1px solid ${C.glassBorder}`,
+      transition: 'all 0.3s ease',
     }}>
-      <div style={{ fontSize: 9, color: '#6b7f99', textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: color || '#e8edf3', lineHeight: 1.2, marginTop: 2 }}>{value}</div>
-      {sub && <div style={{ fontSize: 9, color: '#6b7f99', marginTop: 1 }}>{sub}</div>}
+      <div style={{ fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: color || C.text, lineHeight: 1.2, marginTop: 2 }}>{value}</div>
+      {sub && <div style={{ fontSize: 9, color: C.muted, marginTop: 1 }}>{sub}</div>}
     </div>
   )
 }

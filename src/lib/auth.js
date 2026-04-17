@@ -3,7 +3,7 @@
  * Works with Supabase Auth. When Supabase isn't configured, auth is skipped
  * and the app runs in single-user local mode.
  */
-import { getSupabase, isCloudEnabled } from './supabase'
+import { getSupabase } from './supabase'
 
 const SESSION_KEY = 'maya_auth_session'
 

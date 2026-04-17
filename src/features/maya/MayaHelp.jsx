@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
-  border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
-  dim: '#3a4f6a', teal: '#2DD4BF', gold: '#FFD700',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
+  border: 'rgba(255,255,255,0.12)', text: '#f0f0f5', muted: '#6b6b8a',
+  dim: '#3a3a55', teal: '#2DD4BF', gold: '#FFD700',
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 
@@ -93,4 +93,4 @@ function Card({ title, color, children }) {
     </div>
   )
 }
-const p = { fontSize: 12, color: '#e8edf3', lineHeight: 1.6, margin: '3px 0' }
+const p = { fontSize: 12, color: '#f0f0f5', lineHeight: 1.6, margin: '3px 0' }

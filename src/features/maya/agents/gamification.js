@@ -67,11 +67,11 @@ function getDayGrade(tasksCompleted, totalTasks, hasMood, hasReflection) {
     return { grade: 'S', color: '#FFD700', label: 'Perfect Day' }
   }
   if (tasksCompleted === totalTasks || (pct >= 0.8 && hasReflection)) {
-    return { grade: 'A', color: '#22C55E', label: 'Great Day' }
+    return { grade: 'A', color: '#34D399', label: 'Great Day' }
   }
-  if (pct >= 0.6) return { grade: 'B', color: '#7db8e8', label: 'Solid Day' }
-  if (pct >= 0.4) return { grade: 'C', color: '#FFA500', label: 'OK Day' }
-  return { grade: 'F', color: '#EF4444', label: 'Rough Day' }
+  if (pct >= 0.6) return { grade: 'B', color: '#93C5FD', label: 'Solid Day' }
+  if (pct >= 0.4) return { grade: 'C', color: '#FBBF24', label: 'OK Day' }
+  return { grade: 'F', color: '#F87171', label: 'Rough Day' }
 }
 
 // ─── Process Task Completion ───

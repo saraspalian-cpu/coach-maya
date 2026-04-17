@@ -1,9 +1,9 @@
 import { Component } from 'react'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624',
-  text: '#e8edf3', muted: '#6b7f99',
-  teal: '#2DD4BF', red: '#EF4444',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)',
+  text: '#f0f0f5', muted: '#6b6b8a',
+  teal: '#2DD4BF', red: '#F87171',
   mono: "'IBM Plex Mono', monospace",
   display: "'Bebas Neue', sans-serif",
 }
@@ -69,7 +69,7 @@ export default class ErrorBoundary extends Component {
   }
 }
 
-function btn(bg, color = '#060c18') {
+function btn(bg, color = '#0a0a14') {
   return {
     padding: '12px 22px',
     background: bg, color, border: bg === 'transparent' ? `1px solid ${color}` : 'none',

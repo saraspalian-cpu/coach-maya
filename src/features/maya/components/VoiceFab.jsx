@@ -1,17 +1,13 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useMaya } from '../context/MayaContext'
 
-const C = {
-  bg: '#060c18', red: '#EF4444', teal: '#2DD4BF',
-}
+const HIDDEN = ['/onboarding', '/lesson', '/login', '/signup', '/children']
 
 export default function VoiceFab() {
   const location = useLocation()
-  const navigate = useNavigate()
   const { isListening, startListening, stopListening } = useMaya()
 
-  // Hide on onboarding + lesson live (they have their own controls)
-  if (location.pathname === '/onboarding' || location.pathname === '/lesson') return null
+  if (HIDDEN.includes(location.pathname)) return null
 
   return (
     <button
@@ -21,17 +17,25 @@ export default function VoiceFab() {
       }}
       style={{
         position: 'fixed',
-        bottom: 78, right: 16,
+        bottom: 84, right: 16,
         zIndex: 60,
         width: 56, height: 56, borderRadius: 28,
-        background: isListening ? C.red : C.teal,
-        border: 'none',
+        background: isListening
+          ? 'rgba(248,113,113,0.9)'
+          : 'rgba(45,212,191,0.15)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: isListening
+          ? '2px solid rgba(248,113,113,0.6)'
+          : '1px solid rgba(45,212,191,0.3)',
         boxShadow: isListening
-          ? `0 6px 24px ${C.red}99, 0 0 0 4px ${C.red}33`
-          : `0 6px 20px ${C.teal}66`,
-        color: C.bg, fontSize: 24, cursor: 'pointer',
+          ? '0 6px 24px rgba(248,113,113,0.4), 0 0 40px rgba(248,113,113,0.15)'
+          : '0 6px 20px rgba(45,212,191,0.2), 0 0 40px rgba(45,212,191,0.08)',
+        color: isListening ? '#0a0a14' : '#2DD4BF',
+        fontSize: 22, cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         animation: isListening ? 'pulse 1.4s infinite' : 'none',
+        transition: 'all 0.3s ease',
       }}
       title={isListening ? 'Stop listening' : 'Talk to Maya'}
     >🎤</button>

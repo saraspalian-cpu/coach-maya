@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useMaya } from '../context/MayaContext'
 
 const C = {
-  red: '#EF4444', bg: '#060c18', text: '#e8edf3',
+  red: '#F87171', bg: '#0a0a14', text: '#f0f0f5',
   mono: "'IBM Plex Mono', monospace",
 }
 

@@ -11,7 +11,7 @@ import { startWatchdog, stopWatchdog } from '../lib/scheduler'
 import { WakeWordDetector } from '../lib/wakeWord'
 import sfx from '../lib/sfx'
 import { recordTaskOutcome, logFocusScore, logSubjectScore } from '../agents/intelligence'
-import { saveMood as saveMoodToHistory } from '../MayaMoodBoard'
+import { saveMood as saveMoodToHistory } from '../lib/moods'
 import { generateDefaultSchedule } from '../agents/scheduleGenerator'
 import {
   handleTaskComplete,

@@ -5,9 +5,9 @@ import { listAllVoices, waitForVoices, speak, cancelSpeech } from './lib/voice'
 import VoiceStatus from './components/VoiceStatus'
 
 const C = {
-  bg: '#060c18', surface: '#0c1624', surfaceLight: '#121e30',
-  border: '#1a2a3e', text: '#e8edf3', muted: '#6b7f99',
-  dim: '#3a4f6a', teal: '#2DD4BF', red: '#EF4444',
+  bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
+  border: 'rgba(255,255,255,0.12)', text: '#f0f0f5', muted: '#6b6b8a',
+  dim: '#3a3a55', teal: '#2DD4BF', red: '#F87171',
   mono: "'IBM Plex Mono', monospace", display: "'Bebas Neue', sans-serif",
 }
 
@@ -89,7 +89,7 @@ export default function MayaProfile() {
     setTimeout(() => setSaved(false), 1500)
   }
   const reset = () => {
-    if (!confirm('Reset all of Vasco\'s data? This cannot be undone.')) return
+    if (!confirm(`Reset all of ${profile.name || 'your'} data? This cannot be undone.`)) return
     localStorage.clear()
     navigate('/')
     location.reload()
@@ -293,7 +293,7 @@ export default function MayaProfile() {
         {profile.worksOn?.length > 0 && (
           <Section title="What Maya has learned works">
             {profile.worksOn.map((w, i) => (
-              <div key={i} style={tag('#22C55E')}>{w}</div>
+              <div key={i} style={tag('#34D399')}>{w}</div>
             ))}
           </Section>
         )}

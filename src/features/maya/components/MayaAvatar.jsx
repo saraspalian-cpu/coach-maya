@@ -92,7 +92,7 @@ export default function MayaAvatar({ state = 'idle', size = 200, message = '' })
   const mouthColor = '#C75050'
 
   // Glow ring color based on state
-  const glowColor = state === STATES.URGENT ? '#EF4444'
+  const glowColor = state === STATES.URGENT ? '#F87171'
     : state === STATES.CELEBRATING ? '#FFD700'
     : state === STATES.SPEAKING ? '#2DD4BF'
     : '#2DD4BF'
