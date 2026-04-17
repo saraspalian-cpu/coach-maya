@@ -52,6 +52,7 @@ const MayaWeekly = lazy(() => import('./features/maya/MayaWeekly'))
 const MayaLogin = lazy(() => import('./features/maya/MayaLogin'))
 const MayaSignup = lazy(() => import('./features/maya/MayaSignup'))
 const MayaChildren = lazy(() => import('./features/maya/MayaChildren'))
+const MayaCompetitions = lazy(() => import('./features/maya/MayaCompetitions'))
 
 function Loading() {
   return (
@@ -125,6 +126,7 @@ function GatedRoutes() {
           <Route path="/login" element={<MayaLogin />} />
           <Route path="/signup" element={<MayaSignup />} />
           <Route path="/children" element={<MayaChildren />} />
+          <Route path="/competitions" element={<MayaCompetitions />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

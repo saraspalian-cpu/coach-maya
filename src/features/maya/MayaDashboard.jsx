@@ -809,6 +809,7 @@ function NavRow({ navigate }) {
     { icon: '🏋️', label: 'Workout', to: '/workout' },
     { icon: '💜', label: 'Moods', to: '/moods' },
     { icon: '📋', label: 'Weekly', to: '/weekly' },
+    { icon: '🏆', label: 'Comps', to: '/competitions' },
     { icon: '🧿', label: 'Intel', to: '/intel' },
     { icon: '🏅', label: 'Records', to: '/records' },
     { icon: '📰', label: 'News', to: '/news' },

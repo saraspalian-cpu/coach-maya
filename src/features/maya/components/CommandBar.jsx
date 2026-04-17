@@ -42,6 +42,7 @@ const NAV_ACTIONS = [
   { id: 'workout',     label: 'Workout tracker',   sub: 'Exercises + reps', icon: '🏋️', go: '/workout' },
   { id: 'moods',       label: 'Mood board',        sub: 'Mood history + trends', icon: '💜', go: '/moods' },
   { id: 'weekly',      label: 'Weekly report',     sub: 'Report card + grades', icon: '📋', go: '/weekly' },
+  { id: 'competitions',label: 'Competitions',      sub: 'Upcoming + results', icon: '🏆', go: '/competitions' },
   { id: 'records',     label: 'Personal records',  sub: 'All-time bests',   icon: '🏅', go: '/records' },
   { id: 'news',        label: 'News feed',         sub: 'Tech + Tennis',    icon: '📰', go: '/news' },
   { id: 'focus',       label: 'Focus mode',        sub: 'Pomodoro timer',   icon: '⏱', go: '/focus' },
