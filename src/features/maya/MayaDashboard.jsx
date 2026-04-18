@@ -186,8 +186,8 @@ export default function MayaDashboard({ onOpenSearch }) {
           }}>
             {greeting.toUpperCase()}
           </div>
-          <div style={{ fontSize: 11, color: C.purple, marginTop: 4, fontWeight: 600 }}>
-            Age {profile?.age || 14} · Grade {(profile?.age || 14) - 6} · {profile?.hobbies?.length > 0 ? profile.hobbies.slice(0, 3).join(', ') : 'Singapore'}
+          <div style={{ fontSize: 11, color: '#A78BFA', marginTop: 4, fontWeight: 600 }}>
+            Age 14 · Grade 8 · Singapore
           </div>
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
             {avatarState === 'sleeping' ? 'Resting...' :
