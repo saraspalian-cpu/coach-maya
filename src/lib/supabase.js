@@ -1,29 +1,33 @@
 /**
- * Supabase client — initialized from env vars.
+ * Supabase client — initialized lazily from env vars.
  * Returns null if not configured (app falls back to localStorage).
  */
-import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 let supabase = null
+let _initialized = false
 
-if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  })
+function _init() {
+  if (_initialized) return
+  _initialized = true
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    import('@supabase/supabase-js').then(({ createClient }) => {
+      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true },
+      })
+    }).catch(() => {})
+  }
 }
 
 export function getSupabase() {
+  _init()
   return supabase
 }
 
 export function isCloudEnabled() {
-  return supabase !== null
+  return !!(SUPABASE_URL && SUPABASE_ANON_KEY)
 }
 
-export default supabase
+export default null
