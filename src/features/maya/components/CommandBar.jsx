@@ -45,6 +45,7 @@ const NAV_ACTIONS = [
   { id: 'competitions',label: 'Competitions',      sub: 'Upcoming + results', icon: '🏆', go: '/competitions' },
   { id: 'prep',        label: 'Prep plans',        sub: 'Competition prep tracking', icon: '📝', go: '/prep' },
   { id: 'analytics',   label: 'Analytics',         sub: 'Performance heatmap + trends', icon: '📊', go: '/analytics' },
+  { id: 'trophies',    label: 'Trophy room',       sub: 'All achievements + medals', icon: '🏅', go: '/trophies' },
   { id: 'records',     label: 'Personal records',  sub: 'All-time bests',   icon: '🏅', go: '/records' },
   { id: 'news',        label: 'News feed',         sub: 'Tech + Tennis',    icon: '📰', go: '/news' },
   { id: 'focus',       label: 'Focus mode',        sub: 'Pomodoro timer',   icon: '⏱', go: '/focus' },

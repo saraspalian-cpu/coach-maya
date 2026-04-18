@@ -813,6 +813,7 @@ function NavRow({ navigate }) {
     { icon: '💜', label: 'Moods', to: '/moods' },
     { icon: '📋', label: 'Weekly', to: '/weekly' },
     { icon: '🏆', label: 'Comps', to: '/competitions' },
+    { icon: '🏅', label: 'Trophies', to: '/trophies' },
     { icon: '📝', label: 'Prep', to: '/prep' },
     { icon: '📊', label: 'Analytics', to: '/analytics' },
     { icon: '🧿', label: 'Intel', to: '/intel' },
