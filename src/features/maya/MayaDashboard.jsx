@@ -9,6 +9,7 @@ import { getSuggestion } from './agents/suggestions'
 import { getActiveChallenge } from './agents/challenges'
 import { getDailyFact, getDailyRiddle, getDailyQuote } from './agents/dailyContent'
 import { EXCUSE_OPTIONS, logSkipReason, recordTaskOutcome } from './agents/intelligence'
+import StreakHeatmap from './components/StreakHeatmap'
 
 // Lazy load 3D avatar (Three.js is ~800KB)
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
@@ -294,6 +295,15 @@ export default function MayaDashboard({ onOpenSearch }) {
           <span style={{ color: C.teal, fontSize: 12 }}>→</span>
         </div>
       )}
+
+      {/* ─── Activity Heatmap ─── */}
+      <div style={{
+        padding: '8px 16px 12px', borderBottom: `1px solid ${C.glassBorder}`,
+        background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+      }}>
+        <div style={{ fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>90-day activity</div>
+        <StreakHeatmap size={8} />
+      </div>
 
       {/* ─── Next Competition Countdown ─── */}
       <NextCompWidget navigate={navigate} />
