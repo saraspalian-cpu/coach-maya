@@ -186,6 +186,11 @@ export default function MayaDashboard({ onOpenSearch }) {
           }}>
             {greeting.toUpperCase()}
           </div>
+          {profile?.age && (
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>
+              Age {profile.age} · Grade {(profile.age || 14) - 6}
+            </div>
+          )}
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
             {avatarState === 'sleeping' ? 'Resting...' :
              avatarState === 'celebrating' ? 'LET\'S GO!' :
