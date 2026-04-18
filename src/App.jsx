@@ -56,6 +56,7 @@ const MayaCompetitions = lazy(() => import('./features/maya/MayaCompetitions'))
 const MayaPrepPlan = lazy(() => import('./features/maya/MayaPrepPlan'))
 const MayaAnalytics = lazy(() => import('./features/maya/MayaAnalytics'))
 const MayaTrophyRoom = lazy(() => import('./features/maya/MayaTrophyRoom'))
+const MayaBriefing = lazy(() => import('./features/maya/MayaBriefing'))
 
 function Loading() {
   return (
@@ -133,6 +134,7 @@ function GatedRoutes() {
           <Route path="/prep" element={<MayaPrepPlan />} />
           <Route path="/analytics" element={<MayaAnalytics />} />
           <Route path="/trophies" element={<MayaTrophyRoom />} />
+          <Route path="/briefing" element={<MayaBriefing />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

@@ -812,6 +812,7 @@ function NavRow({ navigate }) {
     { icon: '🏋️', label: 'Workout', to: '/workout' },
     { icon: '💜', label: 'Moods', to: '/moods' },
     { icon: '📋', label: 'Weekly', to: '/weekly' },
+    { icon: '📋', label: 'Briefing', to: '/briefing' },
     { icon: '🏆', label: 'Comps', to: '/competitions' },
     { icon: '🏅', label: 'Trophies', to: '/trophies' },
     { icon: '🎯', label: 'Prep', to: '/prep' },

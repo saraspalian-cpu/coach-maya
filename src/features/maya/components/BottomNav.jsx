@@ -2,9 +2,9 @@ import { useNavigate, useLocation } from 'react-router-dom'
 
 const ITEMS = [
   { icon: '🏠', label: 'Home', to: '/' },
+  { icon: '📋', label: 'Briefing', to: '/briefing' },
+  { icon: '🏆', label: 'Compete', to: '/competitions' },
   { icon: '🎙', label: 'Lesson', to: '/lesson' },
-  { icon: '🧠', label: 'Memory', to: '/memory' },
-  { icon: '🎯', label: 'Goals', to: '/goals' },
   { icon: '👤', label: 'Me', to: '/profile' },
 ]
 

@@ -84,6 +84,43 @@ export default function MayaCompetitions() {
     persist(comps.map(c => c.id === id ? { ...c, result } : c))
   }
 
+  const importFromCV = async () => {
+    try {
+      const { CV_ACHIEVEMENTS } = await import('./lib/cvData')
+      if (!CV_ACHIEVEMENTS) return
+
+      const existing = new Set(comps.map(c => `${c.name}_${c.date}`))
+      const RESULT_MAP = {
+        gold: 'gold', silver: 'silver', bronze: 'bronze', distinction: 'gold',
+        honour: 'silver', merit: 'bronze', laureate: 'silver', winner: 'gold',
+        scholarship: 'gold', second: 'silver', fourth: 'bronze', special: 'silver',
+        platinum: 'gold', finalist: 'bronze', semifinal: 'bronze', quarterfinal: 'bronze',
+        proficiency: 'bronze', honourable: 'bronze', participant: 'none',
+      }
+      const newComps = CV_ACHIEVEMENTS
+        .map(a => {
+          const date = `${a.year}-06-01`
+          const key = `${a.name}_${date}`
+          if (existing.has(key)) return null
+          return {
+            id: `cv_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: a.name,
+            category: a.cat === 'music_theory' ? 'piano' : a.cat === 'academic' ? 'math' : a.cat,
+            date,
+            result: RESULT_MAP[a.result] || 'none',
+            notes: a.grade || '',
+          }
+        })
+        .filter(Boolean)
+
+      if (newComps.length === 0) { alert('All CV results already imported.'); return }
+      persist([...comps, ...newComps])
+      alert(`Imported ${newComps.length} results from your CV.`)
+    } catch {
+      alert('Could not import — CV data not available.')
+    }
+  }
+
   // Stats
   const totalMedals = comps.filter(c => ['gold', 'silver', 'bronze'].includes(c.result)).length
   const goldCount = comps.filter(c => c.result === 'gold').length
@@ -152,6 +189,15 @@ export default function MayaCompetitions() {
             }}>{t === 'add' ? '+ Add' : t}</button>
           ))}
         </div>
+
+        {/* Import from CV */}
+        {comps.length === 0 && (
+          <button onClick={importFromCV} style={{
+            width: '100%', padding: 14, marginBottom: 12,
+            background: C.gold + '12', border: `1px solid ${C.gold}44`, borderRadius: 14,
+            color: C.gold, fontSize: 12, fontFamily: C.mono, fontWeight: 700, cursor: 'pointer',
+          }}>🏅 Import 90+ results from CV</button>
+        )}
 
         {/* Add form */}
         {view === 'add' && (

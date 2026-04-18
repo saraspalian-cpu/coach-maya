@@ -4,6 +4,7 @@
  */
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { CV_ACHIEVEMENTS } from './lib/cvData'
 
 const C = {
   bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
@@ -51,107 +52,6 @@ const MEDAL = {
   semifinal: { emoji: '🎯', label: 'Semifinal', color: C.teal, rank: 4 },
   quarterfinal: { emoji: '🎯', label: 'Quarterfinal', color: C.teal, rank: 4 },
 }
-
-// ─── Pre-loaded achievements from CV ───
-const CV_ACHIEVEMENTS = [
-  // ── Math Olympiads ──
-  { year: 2020, cat: 'math', name: 'Singapore Math Kangaroo Contest', result: 'bronze', grade: 'Grade 2' },
-  { year: 2020, cat: 'math', name: 'American Mathematics Olympiad', result: 'bronze', grade: 'Grade 2' },
-  { year: 2021, cat: 'math', name: 'Singapore & Asian Schools Math Olympiad', result: 'silver', grade: 'Grade 3' },
-  { year: 2021, cat: 'math', name: 'Singapore Math Kangaroo Contest', result: 'bronze', grade: 'Grade 3' },
-  { year: 2021, cat: 'math', name: 'SIMOC Mind Sports', result: 'silver', grade: 'Grade 3' },
-  { year: 2022, cat: 'math', name: 'American Mathematics Olympiad', result: 'bronze', grade: 'Grade 4' },
-  { year: 2022, cat: 'math', name: 'Singapore & Asian Schools Math Olympiad', result: 'gold', grade: 'Grade 4' },
-  { year: 2022, cat: 'math', name: 'Singapore Math Kangaroo Contest', result: 'silver', grade: 'Grade 4' },
-  { year: 2022, cat: 'math', name: 'International Junior Math Olympiad', result: 'bronze', grade: 'Grade 4' },
-  { year: 2022, cat: 'math', name: 'ICAS Mathematics Assessment', result: 'distinction', grade: 'Grade 4' },
-  { year: 2023, cat: 'math', name: 'Singapore Kangaroo Math Contest', result: 'bronze', grade: 'Grade 5' },
-  { year: 2023, cat: 'math', name: 'Singapore & Asian Schools Math Olympiad', result: 'silver', grade: 'Grade 5' },
-  { year: 2023, cat: 'math', name: 'American Mathematics Olympiad', result: 'bronze', grade: 'Grade 5' },
-  { year: 2023, cat: 'math', name: 'Singapore Math Global Finals', result: 'honourable', grade: 'Grade 5' },
-  { year: 2024, cat: 'math', name: 'SASMO Asian School Math Olympiad', result: 'bronze', grade: 'Grade 6' },
-  { year: 2024, cat: 'math', name: 'Singapore Math Global Finals', result: 'honourable', grade: 'Grade 6' },
-  { year: 2024, cat: 'math', name: 'Australian Mathematics Competition', result: 'proficiency', grade: 'Grade 6' },
-  { year: 2024, cat: 'math', name: 'Singapore Math Challenge', result: 'honourable', grade: 'Grade 6' },
-  { year: 2024, cat: 'math', name: 'Mustang Math Tournament — Individual', result: 'silver', grade: 'Grade 6' },
-  { year: 2024, cat: 'math', name: 'American Mathematics Olympiad', result: 'bronze', grade: 'Grade 6' },
-  { year: 2025, cat: 'math', name: 'International Math Competition, Round 1', result: 'gold', grade: 'Grade 7' },
-  { year: 2025, cat: 'math', name: 'Singapore Math Global Final', result: 'bronze', grade: 'Grade 7' },
-  { year: 2025, cat: 'math', name: 'Singapore & Asian Schools Math Olympiad', result: 'bronze', grade: 'Grade 7' },
-  { year: 2025, cat: 'math', name: 'Singapore Kangaroo Math Competition', result: 'bronze', grade: 'Grade 7' },
-  { year: 2025, cat: 'math', name: 'Mustang Math Global Solo Competition', result: 'gold', grade: 'Grade 7' },
-  { year: 2025, cat: 'math', name: 'Australian Mathematics Competition', result: 'distinction', grade: 'Grade 7' },
-  { year: 2025, cat: 'math', name: 'Singapore Math Challenge', result: 'bronze', grade: 'Grade 7' },
-  // Grade 8 — current
-  { year: 2025, cat: 'coding', name: 'Machine Learning I', result: 'participant', grade: 'Grade 7' },
-
-  // ── Coding ──
-  { year: 2023, cat: 'coding', name: 'Bebras Computational Thinking Challenge', result: 'bronze', grade: 'Grade 5' },
-  { year: 2024, cat: 'coding', name: 'BEBRAS Coding Challenge', result: 'merit', grade: 'Grade 6' },
-  { year: 2024, cat: 'coding', name: 'International STEM Olympiad — Coding', result: 'participant', grade: 'Grade 6' },
-  { year: 2025, cat: 'coding', name: 'BEBRAS Coding Challenge', result: 'participant', grade: 'Grade 7' },
-  { year: 2025, cat: 'coding', name: 'National Junior Informatics Olympiad', result: 'honourable', grade: 'Grade 7' },
-
-  // ── Piano Performance ──
-  { year: 2019, cat: 'piano', name: 'ABRSM Piano Grade 1', result: 'distinction', grade: '' },
-  { year: 2021, cat: 'piano', name: 'ABRSM Piano Grade 2', result: 'distinction', grade: '' },
-  { year: 2021, cat: 'piano', name: 'Mandeville Music Awards — Intermediate', result: 'silver', grade: '' },
-  { year: 2022, cat: 'piano', name: 'ABRSM Piano Grade 3', result: 'distinction', grade: '' },
-  { year: 2022, cat: 'piano', name: 'Lemagnifique Music Competitions', result: 'finalist', grade: '' },
-  { year: 2022, cat: 'piano', name: 'Premia Int\'l Young Artist Music Festival', result: 'gold', grade: '' },
-  { year: 2023, cat: 'piano', name: 'Best Classical Musicians Awards', result: 'silver', grade: 'Age 11-13' },
-  { year: 2023, cat: 'piano', name: 'London Young Musician', result: 'silver', grade: 'Age 12 & Under' },
-  { year: 2023, cat: 'piano', name: 'Int\'l Piano Competition Ad Libitum', result: 'laureate', grade: 'Junior & Beethoven' },
-  { year: 2023, cat: 'piano', name: 'Medici Int\'l Music Competition', result: 'special', grade: 'Piano Junior' },
-  { year: 2023, cat: 'piano', name: 'Beethoven Young Musician Competition', result: 'second', grade: '' },
-  { year: 2023, cat: 'piano', name: 'Amadeus Int\'l Music Award', result: 'honour', grade: 'Intermediate' },
-  { year: 2023, cat: 'piano', name: 'Euterpe Music Award', result: 'honour', grade: 'Young Piano A' },
-  { year: 2023, cat: 'piano', name: 'BTHVN Wien Piano Competition', result: 'fourth', grade: 'Category 1' },
-  { year: 2024, cat: 'piano', name: 'Clara Schumann Int\'l Piano Competition', result: 'honour', grade: 'Young Piano A' },
-  { year: 2024, cat: 'piano', name: 'Birmingham Int\'l Music Competition', result: 'honourable', grade: '' },
-  { year: 2024, cat: 'piano', name: 'European Summer Music Competition', result: 'platinum', grade: '' },
-  { year: 2024, cat: 'piano', name: 'WPTA Singapore Int\'l Piano Competition', result: 'silver', grade: 'Junior 11-13' },
-  { year: 2024, cat: 'piano', name: 'Joyeux Music Int\'l Singapore Festival', result: 'merit', grade: 'Rising Star III' },
-  { year: 2024, cat: 'piano', name: 'Tiziano Lugano Piano Academy', result: 'scholarship', grade: '' },
-  { year: 2024, cat: 'piano', name: 'American Classical Music Awards', result: 'special', grade: 'Piano' },
-  { year: 2024, cat: 'piano', name: '4th Staccato Int\'l Piano & Violin Competition', result: 'second', grade: 'Piano 10-14' },
-  { year: 2024, cat: 'piano', name: 'European Classical Virtuoso Award', result: 'silver', grade: 'Talent 11-13' },
-  { year: 2024, cat: 'piano', name: 'European Winter Music Competition', result: 'gold', grade: 'Talent' },
-  { year: 2024, cat: 'piano', name: 'Singapore World Piano Competition', result: 'silver', grade: 'Junior A' },
-  { year: 2024, cat: 'piano', name: 'ABRSM Piano Grade 5', result: 'distinction', grade: '' },
-  { year: 2025, cat: 'piano', name: '5th Staccato Int\'l Piano & Violin Competition', result: 'gold', grade: '' },
-  { year: 2025, cat: 'piano', name: 'WPTA Singapore Int\'l Piano Competition', result: 'bronze', grade: 'Junior 11-13' },
-  { year: 2025, cat: 'piano', name: 'ABRSM Piano Grade 6', result: 'distinction', grade: '' },
-
-  // ── Music Theory ──
-  { year: 2022, cat: 'music_theory', name: 'ABRSM Music Theory Grade 3', result: 'distinction', grade: '' },
-  { year: 2024, cat: 'music_theory', name: 'ABRSM Music Theory Grade 5', result: 'distinction', grade: '' },
-
-  // ── Tennis ──
-  { year: 2022, cat: 'tennis', name: 'Spex Singapore Tennis Tournament U10', result: 'finalist', grade: '' },
-  { year: 2023, cat: 'tennis', name: 'JTTL Tennis Tournament U12B', result: 'winner', grade: 'Team' },
-  { year: 2023, cat: 'tennis', name: 'U12 Doubles Tennis Tournament', result: 'semifinal', grade: '' },
-  { year: 2024, cat: 'tennis', name: 'Spex Singapore Tennis Tournament U12', result: 'finalist', grade: '' },
-  { year: 2024, cat: 'tennis', name: 'JTTL Tennis Tournament U12 Red A', result: 'winner', grade: 'Team' },
-  { year: 2024, cat: 'tennis', name: 'Pesta Sukan Tennis Tournament U12', result: 'finalist', grade: '' },
-  { year: 2024, cat: 'tennis', name: 'Spex Singapore Tennis Tournament U14', result: 'participant', grade: '4th Round' },
-  { year: 2025, cat: 'tennis', name: 'Spex Singapore Tennis Tournament U14', result: 'semifinal', grade: '' },
-  { year: 2025, cat: 'tennis', name: 'ATF Tennis Tournament U14', result: 'quarterfinal', grade: '' },
-
-  // ── Speech & Communication ──
-  { year: 2019, cat: 'speech', name: 'Trinity Communication Skills — Entry Level 3', result: 'distinction', grade: '' },
-  { year: 2022, cat: 'speech', name: 'Trinity Communication Skills Grade 3', result: 'distinction', grade: '' },
-  { year: 2023, cat: 'speech', name: 'Trinity Communication Skills Grade 4', result: 'distinction', grade: '' },
-  { year: 2025, cat: 'speech', name: 'Trinity Acting (Solo) Grade 4', result: 'merit', grade: '' },
-
-  // ── Academic ──
-  { year: 2020, cat: 'academic', name: 'CTY Honors Grade 4 Mathematics', result: 'distinction', grade: 'Grade A' },
-  { year: 2021, cat: 'academic', name: 'CTY Honors Grade 5 Mathematics', result: 'distinction', grade: 'Grade A' },
-  { year: 2022, cat: 'academic', name: 'CTY Honors Grade 6 Mathematics', result: 'distinction', grade: 'Grade A' },
-  { year: 2023, cat: 'academic', name: 'CTY Honors Grade 7 Mathematics', result: 'distinction', grade: 'Grade A' },
-  { year: 2024, cat: 'academic', name: 'CTY Honors Grade 8 Mathematics', result: 'distinction', grade: 'Grade A' },
-  { year: 2025, cat: 'academic', name: 'CTY High School Competitive Math Prep', result: 'distinction', grade: 'Grade A' },
-]
 
 function loadCustom() {
   try { return JSON.parse(localStorage.getItem(TROPHY_KEY)) || [] } catch { return [] }
