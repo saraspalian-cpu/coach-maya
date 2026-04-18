@@ -62,7 +62,7 @@ function Loading() {
     <div style={{
       minHeight: '100vh', display: 'flex',
       alignItems: 'center', justifyContent: 'center',
-      background: '#060c18', color: '#2DD4BF',
+      background: '#0a0a14', color: '#2DD4BF',
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
     }}>
       loading...
