@@ -13,27 +13,47 @@ const C = {
 
 const gradeColors = { S: C.gold, A: C.green, B: C.blue, C: C.amber, F: C.red, '-': C.dim }
 
+// Simple hash for PIN — not cryptographic but prevents plaintext storage
+async function hashPin(pin) {
+  const encoder = new TextEncoder()
+  const data = encoder.encode('maya_salt_' + pin)
+  const hash = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16)
+}
+
 function PinGate({ onUnlock }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState(false)
+  const [attempts, setAttempts] = useState(0)
+  const [locked, setLocked] = useState(false)
   const [settingPin, setSettingPin] = useState(false)
   const profile = loadProfile()
-  const hasPin = !!profile.parentPin
+  const hasPin = !!profile.parentPinHash
 
-  const checkPin = () => {
-    if (pin === profile.parentPin) {
+  const checkPin = async () => {
+    if (locked) return
+    const hashed = await hashPin(pin)
+    if (hashed === profile.parentPinHash) {
       sessionStorage.setItem('parent_unlocked', '1')
+      setAttempts(0)
       onUnlock()
     } else {
+      const next = attempts + 1
+      setAttempts(next)
       setError(true)
       setPin('')
       setTimeout(() => setError(false), 1500)
+      if (next >= 5) {
+        setLocked(true)
+        setTimeout(() => { setLocked(false); setAttempts(0) }, 30000)
+      }
     }
   }
 
-  const setNewPin = () => {
+  const setNewPin = async () => {
     if (pin.length === 4) {
-      saveProfile({ ...profile, parentPin: pin })
+      const hashed = await hashPin(pin)
+      saveProfile({ ...profile, parentPinHash: hashed, parentPin: undefined })
       sessionStorage.setItem('parent_unlocked', '1')
       onUnlock()
     }
@@ -86,7 +106,8 @@ function PinGate({ onUnlock }) {
             transition: 'border-color 200ms',
           }}
         />
-        {error && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>Wrong PIN</div>}
+        {error && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>Wrong PIN{attempts >= 3 ? ` (${5 - attempts} tries left)` : ''}</div>}
+        {locked && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>Too many attempts. Wait 30 seconds.</div>}
         <div style={{ marginTop: 16 }}>
           <button
             onClick={settingPin ? setNewPin : checkPin}
@@ -111,11 +132,10 @@ export default function MayaParent() {
   const report = getDailyReport()
   const [copied, setCopied] = useState(false)
 
-  if (!unlocked && profile?.parentPin) {
+  if (!unlocked && (profile?.parentPinHash || profile?.parentPin)) {
     return <PinGate onUnlock={() => setUnlocked(true)} />
   }
-  if (!unlocked && !profile?.parentPin) {
-    // First visit — offer to set PIN
+  if (!unlocked && !profile?.parentPinHash && !profile?.parentPin) {
     return <PinGate onUnlock={() => setUnlocked(true)} />
   }
 

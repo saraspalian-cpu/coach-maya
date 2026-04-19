@@ -42,7 +42,7 @@ export default function MayaBriefing() {
   const todayPrepStatus = activePreps.map(p => {
     const done = p.log?.[today] || 0
     const hit = done >= p.dailyTarget
-    return { ...p, todayDone: done, todayHit: hit, pct: Math.min(100, Math.round((done / p.dailyTarget) * 100)) }
+    return { ...p, todayDone: done, todayHit: hit, pct: Math.min(100, Math.round((done / (p.dailyTarget || 1)) * 100)) }
   })
   const allPrepsDone = todayPrepStatus.length > 0 && todayPrepStatus.every(p => p.todayHit)
   const prepsStarted = todayPrepStatus.some(p => p.todayDone > 0)

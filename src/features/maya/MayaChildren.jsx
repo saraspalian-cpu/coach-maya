@@ -71,7 +71,8 @@ export default function MayaChildren() {
     await pullFromCloud()
 
     // Navigate to onboarding if new, otherwise dashboard
-    const profile = JSON.parse(localStorage.getItem('maya_profile') || '{}')
+    let profile = {}
+    try { profile = JSON.parse(localStorage.getItem('maya_profile') || '{}') } catch {}
     if (profile.setupComplete) {
       navigate('/')
     } else {

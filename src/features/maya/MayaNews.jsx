@@ -119,7 +119,7 @@ export default function MayaNews() {
         {articles.map((article, i) => (
           <a
             key={i}
-            href={article.link}
+            href={typeof article.link === 'string' && article.link.startsWith('https://') ? article.link : '#'}
             target="_blank"
             rel="noopener noreferrer"
             style={{

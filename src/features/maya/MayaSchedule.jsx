@@ -77,7 +77,7 @@ const TEMPLATES = [
 export default function MayaSchedule() {
   const maya = useMaya()
   const navigate = useNavigate()
-  const [tasks, setTasks] = useState(maya.tasks.map(t => ({ ...t })))
+  const [tasks, setTasks] = useState((Array.isArray(maya.tasks) ? maya.tasks : []).map(t => ({ ...t })))
   const [editingId, setEditingId] = useState(null)
 
   const addTask = () => {

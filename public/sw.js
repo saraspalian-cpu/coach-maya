@@ -74,7 +74,8 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = event.notification.data || '/'
+  const rawUrl = event.notification.data || '/'
+  const safeUrl = (typeof rawUrl === 'string' && rawUrl.startsWith(self.location.origin)) ? rawUrl : '/'
 
   if (event.action === 'dismiss') return
 
@@ -82,17 +83,18 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
         if (client.url.includes(self.location.origin)) {
-          client.navigate(url)
+          client.navigate(safeUrl)
           return client.focus()
         }
       }
-      return clients.openWindow(url)
+      return clients.openWindow(safeUrl)
     })
   )
 })
 
 // ─── Scheduled local notifications (triggered by main thread) ───
 self.addEventListener('message', (event) => {
+  if (event.origin && event.origin !== self.location.origin) return
   if (event.data?.type === 'SCHEDULE_NOTIFICATION') {
     const { delay, title, body, tag, url } = event.data
     setTimeout(() => {

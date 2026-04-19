@@ -538,7 +538,7 @@ export default function MayaLesson() {
                   Unfinished lesson
                 </div>
                 <div style={{ fontSize: 12, color: C.text, marginBottom: 8 }}>
-                  {draft.subject} · {Math.round(draft.elapsed / 60)}m · {draft.transcript.split(/\s+/).length} words
+                  {draft.subject} · {Math.round(draft.elapsed / 60)}m · {(draft.transcript || '').split(/\s+/).length} words
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button

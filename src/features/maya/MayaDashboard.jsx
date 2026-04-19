@@ -688,7 +688,7 @@ function ChatTab({ maya, chatInput, setChatInput, messagesEndRef }) {
           value={chatInput}
           onChange={e => setChatInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
-          placeholder="Talk to Maya..."
+          placeholder="Talk to Maya..." maxLength={2000}
           style={{
             flex: 1, padding: '10px 14px', background: C.surface,
             border: `1px solid ${C.border}`, borderRadius: 10,

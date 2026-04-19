@@ -203,7 +203,7 @@ export default function MayaPrepPlan() {
 
 function PlanCard({ plan, today, onLog, onRemove, archived }) {
   const todayDone = plan.log[today] || 0
-  const todayPct = Math.min(100, Math.round((todayDone / plan.dailyTarget) * 100))
+  const todayPct = Math.min(100, Math.round((todayDone / (plan.dailyTarget || 1)) * 100))
   const todayHit = todayDone >= plan.dailyTarget
 
   // Days with logs

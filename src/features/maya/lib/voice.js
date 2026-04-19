@@ -130,10 +130,8 @@ async function speak(text, { onStart, onBoundary, onEnd, onError } = {}) {
   if (profile?.elevenLabsApiKey && profile?.elevenLabsVoiceId) {
     try {
       await speakElevenLabs(text, profile, { onStart, onEnd, onError })
-      console.log('[Maya voice] ✓ ElevenLabs spoke')
       return
     } catch (e) {
-      console.error('[Maya voice] ❌ ElevenLabs FAILED, falling back to system voice:', e?.message || e)
       // Surface the error visibly via a toast-style notification
       try {
         if (typeof window !== 'undefined') {
@@ -142,9 +140,9 @@ async function speak(text, { onStart, onBoundary, onEnd, onError } = {}) {
       } catch {}
     }
   } else if (profile?.elevenLabsApiKey && !profile?.elevenLabsVoiceId) {
-    console.warn('[Maya voice] ElevenLabs key set but NO VOICE ID — pick a preset in Profile')
+    // ElevenLabs key set but no voice ID
   } else {
-    console.log('[Maya voice] Using system voice (no ElevenLabs key)')
+    // Using system voice (no ElevenLabs key)
   }
 
   if (!('speechSynthesis' in window)) {

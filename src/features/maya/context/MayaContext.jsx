@@ -83,12 +83,14 @@ function MayaProvider({ children }) {
   const savedSchedule = loadFromStorage(SCHEDULE_KEY, DEFAULT_SCHEDULE)
   const initialProfile = loadProfile()
 
-  const initialTasks = savedSchedule.map(t => ({ ...t, completed: false, skipped: false }))
+  const safeSchedule = Array.isArray(savedSchedule) ? savedSchedule : DEFAULT_SCHEDULE
+  const initialTasks = safeSchedule.map(t => ({ ...t, completed: false, skipped: false }))
+  const safeTasks = Array.isArray(savedState?.tasks) ? savedState.tasks : initialTasks
   const initialState = {
-    tasks: savedState?.tasks || initialTasks,
-    gamification: savedState?.gamification || createInitialState(initialTasks.length),
-    messages: savedState?.messages || [],
-    dayLog: savedState?.dayLog || [],
+    tasks: safeTasks,
+    gamification: savedState?.gamification && typeof savedState.gamification === 'object' ? savedState.gamification : createInitialState(initialTasks.length),
+    messages: Array.isArray(savedState?.messages) ? savedState.messages : [],
+    dayLog: Array.isArray(savedState?.dayLog) ? savedState.dayLog : [],
     unlockedAchievements: savedState?.unlockedAchievements || [],
     lastActivityTime: savedState?.lastActivityTime || null,
     pendingSpotCheck: savedState?.pendingSpotCheck || null,
