@@ -8,6 +8,7 @@ import { weeklyInsights } from './agents/insights'
 import { getSuggestion } from './agents/suggestions'
 import { getActiveChallenge } from './agents/challenges'
 import { getDailyFact, getDailyRiddle, getDailyQuote } from './agents/dailyContent'
+import { getPersonalGreeting } from './agents/personalGreeting'
 import { EXCUSE_OPTIONS, logSkipReason, recordTaskOutcome } from './agents/intelligence'
 import StreakHeatmap from './components/StreakHeatmap'
 
@@ -75,16 +76,18 @@ export default function MayaDashboard({ onOpenSearch }) {
     const todayKey = `maya_greeted_${new Date().toISOString().slice(0, 10)}`
     if (localStorage.getItem(todayKey)) return
     const t = setTimeout(() => {
-      const hour = new Date().getHours()
-      const name = profile?.name || 'Champ'
-      const opener = hour < 11
-        ? `Morning, ${name}. Day ${profile?.currentStreak || 1} of the streak. Let's lock in.`
-        : hour < 17
-          ? `Hey ${name}. Pick a task and get moving. I'm watching.`
-          : hour < 22
-            ? `Evening, ${name}. Wrap-up time?`
-            : `Late one, ${name}. Don't push too hard. Tomorrow exists.`
-      maya.speakText(opener)
+      try {
+        const g = getPersonalGreeting({
+          profile: maya.profile,
+          tasks: maya.tasks,
+          todayMood: maya.todayMood,
+          gamification: maya.gamification,
+        })
+        maya.speakText(`${g.headline} ${g.subline}`)
+      } catch {
+        const name = profile?.name || 'Champ'
+        maya.speakText(`Hey ${name}. Let's get started.`)
+      }
       localStorage.setItem(todayKey, '1')
     }, 1500)
     return () => clearTimeout(t)
@@ -107,14 +110,11 @@ export default function MayaDashboard({ onOpenSearch }) {
     return 'idle'
   }, [voiceState, messages, comboTimeLeft, completedCount, totalCount])
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours()
-    const name = profile?.name || 'you'
-    if (hour < 12) return `Morning, ${name}.`
-    if (hour < 17) return `Afternoon, ${name}.`
-    if (hour < 21) return `Evening, ${name}.`
-    return `Late one, ${name}.`
-  }, [profile])
+  const personal = useMemo(
+    () => getPersonalGreeting({ profile, tasks, todayMood, gamification: gam }),
+    [profile, tasks, todayMood, gam]
+  )
+  const greeting = personal.headline
 
   return (
     <div style={{
@@ -187,9 +187,15 @@ export default function MayaDashboard({ onOpenSearch }) {
           }}>
             {greeting.toUpperCase()}
           </div>
-          <div style={{ fontSize: 11, color: '#A78BFA', marginTop: 4, fontWeight: 600 }}>
-            Age 14 · Grade 8 · Singapore
-          </div>
+          {(profile?.age || profile?.grade || profile?.location) && (
+            <div style={{ fontSize: 11, color: '#A78BFA', marginTop: 4, fontWeight: 600 }}>
+              {[
+                profile?.age ? `Age ${profile.age}` : null,
+                profile?.grade ? `Grade ${profile.grade}` : null,
+                profile?.location || null,
+              ].filter(Boolean).join(' · ')}
+            </div>
+          )}
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
             {avatarState === 'sleeping' ? 'Resting...' :
              avatarState === 'celebrating' ? 'LET\'S GO!' :
@@ -198,6 +204,14 @@ export default function MayaDashboard({ onOpenSearch }) {
              avatarState === 'thinking' ? '● Listening...' :
              `Level ${gam.level?.level} · ${gam.level?.title}`}
           </div>
+          {personal.subline && (
+            <div style={{
+              fontSize: 11, color: C.text, marginTop: 8,
+              opacity: 0.85, lineHeight: 1.4, maxWidth: 320, marginLeft: 'auto', marginRight: 'auto',
+            }}>
+              {personal.subline}
+            </div>
+          )}
 
           {/* Streak pill */}
           {(profile?.currentStreak || 0) > 0 && (
@@ -312,7 +326,7 @@ export default function MayaDashboard({ onOpenSearch }) {
       <WeeklyChallenge />
 
       {/* ─── Daily content ─── */}
-      <DailyContent />
+      <DailyContent profile={profile} />
 
       {/* ─── Smart suggestion ─── */}
       <SuggestionCard navigate={navigate} maya={maya} />
@@ -724,10 +738,10 @@ function MayaMessageBubble({ message }) {
   )
 }
 
-function DailyContent() {
-  const fact = useMemo(() => getDailyFact(), [])
+function DailyContent({ profile }) {
+  const fact = useMemo(() => getDailyFact(profile), [profile])
   const riddle = useMemo(() => getDailyRiddle(), [])
-  const quote = useMemo(() => getDailyQuote(), [])
+  const quote = useMemo(() => getDailyQuote(profile), [profile])
   const [showAnswer, setShowAnswer] = useState(false)
 
   return (
