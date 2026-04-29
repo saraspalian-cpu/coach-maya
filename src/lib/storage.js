@@ -30,7 +30,23 @@ function localGet(key) {
 }
 
 function localSet(key, data) {
-  try { localStorage.setItem(key, JSON.stringify(data)) } catch {}
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+    return true
+  } catch (e) {
+    // Quota exceeded — drop transient/log keys to make room, then retry once
+    if (e && (e.name === 'QuotaExceededError' || e.code === 22)) {
+      try {
+        const transientKeys = ['maya_news_cache', 'maya_facts_cache', 'maya_quotes_cache']
+        for (const k of transientKeys) {
+          try { localStorage.removeItem(k) } catch {}
+        }
+        localStorage.setItem(key, JSON.stringify(data))
+        return true
+      } catch {}
+    }
+    return false
+  }
 }
 
 // ─── Cloud sync (best-effort, non-blocking) ───

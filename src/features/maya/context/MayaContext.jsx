@@ -36,16 +36,40 @@ function loadFromStorage(key, fallback) {
   } catch { return fallback }
 }
 function saveToStorage(key, data) {
-  try { localStorage.setItem(key, JSON.stringify(data)) } catch {}
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch (e) {
+    // Quota exceeded — prune oldest messages/dayLog and retry once
+    if (e && (e.name === 'QuotaExceededError' || e.code === 22)) {
+      try {
+        const pruned = {
+          ...data,
+          messages: Array.isArray(data?.messages) ? data.messages.slice(-50) : [],
+          dayLog: Array.isArray(data?.dayLog) ? data.dayLog.slice(-100) : [],
+          spotChecks: Array.isArray(data?.spotChecks) ? data.spotChecks.slice(-25) : [],
+        }
+        localStorage.setItem(key, JSON.stringify(pruned))
+      } catch {}
+    }
+  }
 }
 
 const DEFAULT_SCHEDULE = generateDefaultSchedule()
 
+// Bounds prevent localStorage QuotaExceededError on long sessions
+const MAX_MESSAGES = 200
+const MAX_DAY_LOG = 500
+const MAX_SPOT_CHECKS = 100
+
+function capArr(arr, max) {
+  return arr.length > max ? arr.slice(arr.length - max) : arr
+}
+
 function mayaReducer(state, action) {
   switch (action.type) {
     case 'SET_STATE': return { ...state, ...action.payload }
-    case 'ADD_MESSAGE': return { ...state, messages: [...state.messages, action.payload] }
-    case 'ADD_MESSAGES': return { ...state, messages: [...state.messages, ...action.payload] }
+    case 'ADD_MESSAGE': return { ...state, messages: capArr([...state.messages, action.payload], MAX_MESSAGES) }
+    case 'ADD_MESSAGES': return { ...state, messages: capArr([...state.messages, ...action.payload], MAX_MESSAGES) }
     case 'COMPLETE_TASK': {
       const tasks = state.tasks.map(t =>
         t.id === action.payload.id ? { ...t, completed: true, completedAt: new Date().toISOString() } : t
@@ -63,7 +87,7 @@ function mayaReducer(state, action) {
     case 'SET_PENDING_SPOT_CHECK': return { ...state, pendingSpotCheck: action.payload }
     case 'CLEAR_SPOT_CHECK': return { ...state, pendingSpotCheck: null }
     case 'SET_MOOD': return { ...state, todayMood: action.payload }
-    case 'ADD_SPOT_CHECK': return { ...state, spotChecks: [...(state.spotChecks || []), action.payload] }
+    case 'ADD_SPOT_CHECK': return { ...state, spotChecks: capArr([...(state.spotChecks || []), action.payload], MAX_SPOT_CHECKS) }
     case 'SET_PROFILE': return { ...state, profile: action.payload, personalityContext: buildPersonalityContext(action.payload) }
     case 'SET_VOICE_STATE': return { ...state, voiceState: action.payload }
     case 'RESET_DAY': {
@@ -111,10 +135,16 @@ function MayaProvider({ children }) {
   const [interimTranscript, setInterimTranscript] = useState('')
   const [liveLesson, setLiveLesson] = useState(null) // { subject, startedAt }
 
-  // Persist
+  // Persist (with bounds to avoid quota errors)
   useEffect(() => {
     const { profile, personalityContext, voiceState, ...rest } = state
-    saveToStorage(STORAGE_KEY, rest)
+    const bounded = {
+      ...rest,
+      messages: capArr(rest.messages || [], MAX_MESSAGES),
+      dayLog: capArr(rest.dayLog || [], MAX_DAY_LOG),
+      spotChecks: capArr(rest.spotChecks || [], MAX_SPOT_CHECKS),
+    }
+    saveToStorage(STORAGE_KEY, bounded)
   }, [state])
 
   // One-time migration: force voice OFF for users who had it on from earlier versions

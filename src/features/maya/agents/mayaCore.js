@@ -171,8 +171,24 @@ async function generateMessage(type, context, personalityContext = '', history =
   }
 }
 
-// ─── Claude API Call ───
+// ─── Claude API Call (with rate limiting to prevent runaway costs) ───
+const RATE_LIMIT = { maxPerHour: 200, maxPerMinute: 20, calls: [] }
+
+function checkRateLimit() {
+  const now = Date.now()
+  RATE_LIMIT.calls = RATE_LIMIT.calls.filter(t => now - t < 3600_000)
+  const lastMinute = RATE_LIMIT.calls.filter(t => now - t < 60_000).length
+  if (RATE_LIMIT.calls.length >= RATE_LIMIT.maxPerHour) {
+    throw new Error('Hourly API limit reached — using fallback')
+  }
+  if (lastMinute >= RATE_LIMIT.maxPerMinute) {
+    throw new Error('Per-minute API limit reached — using fallback')
+  }
+  RATE_LIMIT.calls.push(now)
+}
+
 async function callClaudeAPI(systemPrompt, userPrompt, history = []) {
+  checkRateLimit()
   // Read key from profile (preferred) or env var (fallback)
   let apiKey = ''
   try {
@@ -183,28 +199,44 @@ async function callClaudeAPI(systemPrompt, userPrompt, history = []) {
   }
   if (!apiKey) throw new Error('No API key configured')
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
-      max_tokens: 250,
-      system: systemPrompt,
-      messages: [
-        ...history,
-        { role: 'user', content: userPrompt },
-      ],
-    }),
-  })
+  // Cap inputs to prevent token-bombing via huge user input
+  const safeSystem = String(systemPrompt || '').slice(0, 8000)
+  const safeUser = String(userPrompt || '').slice(0, 4000)
+  const safeHistory = (Array.isArray(history) ? history : []).slice(-12).map(m => ({
+    role: m.role,
+    content: String(m.content || '').slice(0, 2000),
+  }))
 
-  if (!res.ok) throw new Error(`API error: ${res.status}`)
-  const data = await res.json()
-  return data.content[0].text
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30_000)
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 250,
+        system: safeSystem,
+        messages: [
+          ...safeHistory,
+          { role: 'user', content: safeUser },
+        ],
+      }),
+    })
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`)
+    const data = await res.json()
+    return data.content[0].text
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 // ─── Smart fallback chat (keyword-based, no API needed) ───
