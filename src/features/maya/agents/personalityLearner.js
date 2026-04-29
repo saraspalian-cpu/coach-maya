@@ -86,6 +86,38 @@ function recordEvent(event) {
 }
 
 /**
+ * Inside-joke builder.
+ * When the kid laughs (or reacts strongly) at something Maya said, we save a
+ * compact reference of the exchange so Maya can call it back later. These
+ * already flow into Maya's prompt via buildPersonalityContext (insideJokes).
+ *
+ * @param {string} userText  what the kid just said
+ * @param {string} mayaText  the Maya message they're reacting to
+ * @returns {boolean} true if a joke was saved
+ */
+function recordInsideJoke(userText, mayaText) {
+  if (!userText || !mayaText) return false
+  const u = userText.toLowerCase()
+  const isLaugh = /(lol|haha|lmao|rofl|hilarious|🤣|😂|😅|💀)/.test(u)
+  const isShock = /(omg|no way|wait what|🤯|stop it)/.test(u)
+  if (!isLaugh && !isShock) return false
+
+  const profile = loadProfile()
+  // Compact the Maya line: strip newlines, cap at ~80 chars
+  const snippet = mayaText.replace(/\s+/g, ' ').trim().slice(0, 80)
+  if (!snippet) return false
+
+  const existing = profile.insideJokes || []
+  // Skip near-duplicates
+  if (existing.some(j => j.toLowerCase().includes(snippet.toLowerCase().slice(0, 40)))) {
+    return false
+  }
+  profile.insideJokes = [...existing, snippet].slice(-10)
+  saveProfile(profile)
+  return true
+}
+
+/**
  * Daily summary — called once per day to compress the learned signal.
  * Returns highlights for the parent intelligence agent.
  */
@@ -108,4 +140,4 @@ function dailySummary(dayLog = []) {
   }
 }
 
-export { recordEvent, dailySummary }
+export { recordEvent, dailySummary, recordInsideJoke }

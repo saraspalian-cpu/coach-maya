@@ -8,6 +8,7 @@ import { processTaskComplete, processTaskSkip, checkAchievements, getDayGrade } 
 import { evaluateSchedule, getDebrief, getMorningBriefing } from './scheduler'
 import { generateMessage, MESSAGE_TYPES } from './mayaCore'
 import { shouldSpotCheck, generateSpotCheckQuestion, createSpotCheckRecord } from './antiGaming'
+import { recordInsideJoke } from './personalityLearner'
 
 // ─── Event Types ───
 const EVENTS = {
@@ -215,6 +216,17 @@ async function handleUserChat(message, state, personalityContext) {
   const mayaMsg = await generateMessage(MESSAGE_TYPES.FREE_CHAT, {
     userMessage: message,
   }, personalityContext, history)
+
+  // Inside-joke detection: if kid laughed at something, save the prior Maya
+  // line they're reacting to (the most recent assistant message before this turn).
+  try {
+    const lastMaya = [...(state.messages || [])]
+      .reverse()
+      .find(m => m && m.text && m.type !== 'user')
+    if (lastMaya?.text) {
+      recordInsideJoke(message, lastMaya.text)
+    }
+  } catch {}
 
   return {
     events: [{ agent: 'maya_core', action: 'free_chat' }],

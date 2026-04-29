@@ -127,9 +127,10 @@ function PinGate({ onUnlock }) {
 
 export default function MayaParent() {
   const navigate = useNavigate()
-  const { getDailyReport, profile } = useMaya()
+  const { getDailyReport, getWeeklyDigest, profile } = useMaya()
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem('parent_unlocked') === '1')
   const report = getDailyReport()
+  const digest = getWeeklyDigest?.()
   const [copied, setCopied] = useState(false)
 
   if (!unlocked && (profile?.parentPinHash || profile?.parentPin)) {
@@ -197,9 +198,14 @@ export default function MayaParent() {
         }}>←</button>
         <div>
           <div style={{ fontFamily: C.display, fontSize: 22, color: C.teal, letterSpacing: 2, lineHeight: 1 }}>
-            PARENT REPORT
+            {(profile?.name || 'CHAMP').toUpperCase()}'S REPORT
           </div>
-          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{report.date} · {profile?.name}</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>
+            {report.date}
+            {report.age ? ` · age ${report.age}` : ''}
+            {report.schoolGrade ? ` · grade ${report.schoolGrade}` : ''}
+            {report.location ? ` · ${report.location}` : ''}
+          </div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
           <button onClick={copyReport} style={{
@@ -232,6 +238,63 @@ export default function MayaParent() {
           }}>{report.grade}</div>
           <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>{report.gradeLabel}</div>
         </div>
+
+        {/* Weekly digest — only when there's enough history */}
+        {digest && digest.daysLogged >= 3 && (
+          <div style={{
+            padding: 16, background: C.surface, borderRadius: 16,
+            border: `1px solid ${C.border}`, marginBottom: 16,
+            borderLeft: `3px solid ${C.teal}`,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+              <div style={{ fontSize: 10, color: C.teal, textTransform: 'uppercase', letterSpacing: 1 }}>
+                Last 7 days
+              </div>
+              {digest.xpDeltaPct !== null && (
+                <div style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: digest.xpDeltaPct >= 0 ? C.green : C.red,
+                }}>
+                  {digest.xpDeltaPct >= 0 ? '↑' : '↓'} {Math.abs(digest.xpDeltaPct)}% vs prior week
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+              <div>
+                <div style={{ fontSize: 9, color: C.muted }}>AVG XP</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.text }}>{digest.avgXP}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, color: C.muted }}>FINISH</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.text }}>{digest.finishRate}%</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, color: C.muted }}>S/A DAYS</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.gold }}>{digest.sDays}/{digest.aDays}</div>
+              </div>
+            </div>
+            {digest.wins.length > 0 && (
+              <div style={{ marginBottom: 6 }}>
+                {digest.wins.map((w, i) => (
+                  <div key={i} style={{ fontSize: 11, color: C.green, lineHeight: 1.5 }}>✓ {w}</div>
+                ))}
+              </div>
+            )}
+            {digest.flags.length > 0 && (
+              <div style={{ marginBottom: 6 }}>
+                {digest.flags.map((f, i) => (
+                  <div key={i} style={{ fontSize: 11, color: C.amber, lineHeight: 1.5 }}>⚠ {f}</div>
+                ))}
+              </div>
+            )}
+            <div style={{
+              marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}`,
+              fontSize: 12, color: C.text, lineHeight: 1.5,
+            }}>
+              <span style={{ color: C.teal, fontWeight: 700 }}>Next:</span> {digest.nextAction}
+            </div>
+          </div>
+        )}
 
         {/* Stats grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>

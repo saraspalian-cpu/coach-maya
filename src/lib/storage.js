@@ -8,6 +8,38 @@
  */
 import { getSupabase, isCloudEnabled } from './supabase'
 
+// ─── Keys that hold per-child data — used for cloud sync + child-switch isolation ───
+export const MAYA_KEYS = [
+  'maya_state', 'maya_schedule', 'maya_profile', 'maya_memory',
+  'maya_lessons', 'maya_vocab', 'maya_intelligence', 'maya_habits',
+  'maya_water', 'maya_sleep', 'maya_moods', 'maya_screen_time',
+  'maya_typing_records', 'maya_reading', 'maya_math_records',
+  'maya_tennis', 'maya_piano', 'maya_workouts', 'maya_journal',
+  'maya_challenges', 'maya_shop', 'maya_redemptions',
+  'maya_competitions', 'maya_prep_plans', 'maya_records',
+  'maya_daily_reports', 'maya_spot_checks',
+]
+
+/**
+ * Wipe all per-child localStorage entries. Called when switching children
+ * so a previous kid's data can't bleed into the next session before the
+ * cloud pull has populated fresh data.
+ */
+export function clearLocal() {
+  for (const key of MAYA_KEYS) {
+    try { localStorage.removeItem(key) } catch {}
+    // Also drop the per-key updated_at sentinel that pullFromCloud writes
+    try { localStorage.removeItem(`${key}_updated`) } catch {}
+  }
+  // Per-day greeting flag is also kid-specific
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('maya_greeted_')) localStorage.removeItem(k)
+    }
+  } catch {}
+}
+
 // ─── Current child context ───
 let _activeChildId = localStorage.getItem('maya_active_child') || null
 
@@ -133,15 +165,6 @@ export async function pullFromCloud() {
 export async function pushToCloud() {
   const sb = getSupabase()
   if (!sb || !_activeChildId) return false
-
-  const MAYA_KEYS = [
-    'maya_state', 'maya_schedule', 'maya_profile', 'maya_memory',
-    'maya_lessons', 'maya_vocab', 'maya_intelligence', 'maya_habits',
-    'maya_water', 'maya_sleep', 'maya_moods', 'maya_screen_time',
-    'maya_typing_records', 'maya_reading', 'maya_math_records',
-    'maya_tennis', 'maya_piano', 'maya_workouts', 'maya_journal',
-    'maya_challenges', 'maya_shop', 'maya_redemptions',
-  ]
 
   try {
     const rows = MAYA_KEYS

@@ -3,9 +3,11 @@
  * Picks ONE most-relevant insight to surface in the dashboard "For You" card.
  *
  * Returns: { headline, sub, icon, action, color, kind }
- *   kind: 'pattern' | 'streak' | 'comp' | 'mood' | 'rate' | 'wins'
+ *   kind: 'pattern' | 'streak' | 'comp' | 'mood' | 'rate' | 'wins' | 'repair'
  *   color: hex string
  */
+
+import { getStreakRepairPlan } from './streakRepair'
 
 function loadLS(key) {
   try { return JSON.parse(localStorage.getItem(key)) } catch { return null }
@@ -44,6 +46,16 @@ function getPersonalInsight({ profile = {}, gamification = {} } = {}) {
         sub: 'Sharpen up. Every session matters.',
         icon: '🎯', action: '/prep', color: '#F87171', kind: 'comp',
       }
+    }
+  }
+
+  // ── 1b. Streak repair (high priority, after imminent comp) ──
+  const repair = getStreakRepairPlan(profile)
+  if (repair) {
+    return {
+      headline: repair.headline,
+      sub: repair.sub,
+      icon: '🌱', action: '/', color: '#A78BFA', kind: 'repair',
     }
   }
 

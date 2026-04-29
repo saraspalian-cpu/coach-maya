@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getChildren, addChild, removeChild, getUser, logOut } from '../../lib/auth'
-import { setActiveChild, pushToCloud, pullFromCloud } from '../../lib/storage'
+import { setActiveChild, pushToCloud, pullFromCloud, clearLocal } from '../../lib/storage'
 import { isCloudEnabled } from '../../lib/supabase'
 
 const C = {
@@ -65,18 +65,22 @@ export default function MayaChildren() {
 
   const handleSelect = async (child) => {
     setSwitching(child.id)
+    // Wipe previous child's local data BEFORE switching, so nothing leaks if
+    // the cloud pull is partial or fails.
+    clearLocal()
     setActiveChild(child.id)
 
-    // Pull cloud data for this child
+    // Pull cloud data for this child (populates localStorage fresh)
     await pullFromCloud()
 
     // Navigate to onboarding if new, otherwise dashboard
     let profile = {}
     try { profile = JSON.parse(localStorage.getItem('maya_profile') || '{}') } catch {}
     if (profile.setupComplete) {
-      navigate('/')
+      // Force a hard reload so MayaContext re-initialises from the new child's data
+      window.location.assign('/')
     } else {
-      navigate('/onboarding')
+      window.location.assign('/onboarding')
     }
   }
 

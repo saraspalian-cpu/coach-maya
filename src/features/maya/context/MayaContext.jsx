@@ -3,7 +3,7 @@ import { createInitialState } from '../agents/gamification'
 import { getComboTimeLeft } from '../agents/scheduler'
 import { evaluateResponse, createSpotCheckRecord } from '../agents/antiGaming'
 import { recordEvent } from '../agents/personalityLearner'
-import { generateDailyReport } from '../agents/parentIntelligence'
+import { generateDailyReport, generateWeeklyDigest } from '../agents/parentIntelligence'
 import { loadProfile, saveProfile, buildPersonalityContext } from '../lib/profile'
 import { speak, cancelSpeech, listen, isSTTSupported } from '../lib/voice'
 import { notify } from '../lib/notifications'
@@ -351,7 +351,7 @@ function MayaProvider({ children }) {
   }, [state.profile])
 
   const getDailyReport = useCallback(() => {
-    return generateDailyReport({
+    const report = generateDailyReport({
       dayLog: state.dayLog,
       gamification: state.gamification,
       tasks: state.tasks,
@@ -359,7 +359,22 @@ function MayaProvider({ children }) {
       reflection: state.dayLog.find(e => e.type === 'reflection')?.text,
       spotChecks: state.spotChecks,
     })
+    // Snapshot one report per day so weekly digest has history to draw on.
+    try {
+      const history = loadFromStorage('maya_daily_reports', [])
+      const arr = Array.isArray(history) ? history : []
+      const idx = arr.findIndex(r => r.date === report.date)
+      if (idx >= 0) arr[idx] = report
+      else arr.push(report)
+      saveToStorage('maya_daily_reports', arr.slice(-60))
+    } catch {}
+    return report
   }, [state])
+
+  const getWeeklyDigest = useCallback(() => {
+    const history = loadFromStorage('maya_daily_reports', [])
+    return generateWeeklyDigest(Array.isArray(history) ? history : [])
+  }, [])
 
   // Wake word — "hey maya"
   useEffect(() => {
@@ -448,6 +463,7 @@ function MayaProvider({ children }) {
     stopSpeaking,
     speakText,
     getDailyReport,
+    getWeeklyDigest,
   }
 
   return <MayaContext.Provider value={value}>{children}</MayaContext.Provider>
