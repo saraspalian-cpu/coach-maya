@@ -11,6 +11,8 @@ const DEFAULT_PROFILE = {
   // Identity
   name: '',
   age: 12,
+  grade: '',           // school grade/year (e.g. "8", "Year 9")
+  location: '',        // city or country (e.g. "Singapore")
   pronouns: '',
   // Goals & motivation
   bigGoals: [],         // ["Make varsity tennis", "Learn piano sonata"]
@@ -73,24 +75,86 @@ function updateProfile(patch) {
   return next
 }
 
+function safeLS(key) {
+  try { return JSON.parse(localStorage.getItem(key)) } catch { return null }
+}
+
 /**
  * Build the personality_context string injected into Maya's system prompt.
  * This is what makes Maya feel like she KNOWS this kid.
+ * Pulls live signals (next competition, mood pattern, completion rate) so
+ * Maya can reference them naturally without us hard-coding examples.
  */
 function buildPersonalityContext(profile) {
   if (!profile) return ''
   const lines = []
-  lines.push(`Name: ${profile.name}, age ${profile.age}.`)
+  const today = new Date().toISOString().slice(0, 10)
+
+  // ── Identity ──
+  const idBits = [
+    `Name: ${profile.name || 'Champ'}`,
+    profile.age ? `age ${profile.age}` : null,
+    profile.grade ? `Grade ${profile.grade}` : null,
+    profile.location || null,
+  ].filter(Boolean)
+  lines.push(idBits.join(', ') + '.')
+
   if (profile.bigGoals?.length) lines.push(`Big goals: ${profile.bigGoals.join('; ')}.`)
   if (profile.hobbies?.length) lines.push(`Hobbies: ${profile.hobbies.join(', ')}.`)
   if (profile.favoriteSubjects?.length) lines.push(`Loves: ${profile.favoriteSubjects.join(', ')}.`)
   if (profile.hardSubjects?.length) lines.push(`Struggles with: ${profile.hardSubjects.join(', ')}.`)
   lines.push(`Humor style: ${profile.humorStyle}. Push intensity: ${profile.pushIntensity}. Main driver: ${profile.motivationDriver}.`)
   if (profile.currentStreak) lines.push(`Current streak: ${profile.currentStreak} days. Longest: ${profile.longestStreak}.`)
+
+  // ── Live: upcoming competitions ──
+  const comps = safeLS('maya_competitions') || []
+  const upcoming = comps.filter(c => c?.date && c.date >= today).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3)
+  if (upcoming.length > 0) {
+    const compStrs = upcoming.map(c => {
+      const days = Math.ceil((new Date(c.date) - new Date(today)) / 86400000)
+      return `${c.name} in ${days}d`
+    })
+    lines.push(`Upcoming competitions: ${compStrs.join('; ')}.`)
+  }
+
+  // ── Live: recent mood pattern (last 5 entries) ──
+  const moods = safeLS('maya_moods') || []
+  if (Array.isArray(moods) && moods.length >= 3) {
+    const recent = moods.slice(-5).map(m => m.mood).filter(Boolean)
+    if (recent.length >= 3) {
+      const dominant = mostFrequent(recent)
+      if (dominant) lines.push(`Recent mood pattern: mostly ${dominant} (last ${recent.length} check-ins).`)
+    }
+  }
+
+  // ── Live: 7-day completion rate ──
+  const state = safeLS('maya_state')
+  if (state?.dayLog && Array.isArray(state.dayLog)) {
+    const sevenDays = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
+    const recentEvents = state.dayLog.filter(e => (e.time || '').slice(0, 10) >= sevenDays)
+    const done = recentEvents.filter(e => e.type === 'task_complete').length
+    const skipped = recentEvents.filter(e => e.type === 'task_skip').length
+    if (done + skipped >= 3) {
+      const pct = Math.round((done / (done + skipped)) * 100)
+      lines.push(`Last 7 days: ${done} completed, ${skipped} skipped (${pct}% finish rate).`)
+    }
+  }
+
   if (profile.insideJokes?.length) lines.push(`Inside jokes you've earned: ${profile.insideJokes.join(' | ')}.`)
   if (profile.worksOn?.length) lines.push(`Tactics that work: ${profile.worksOn.slice(-5).join('; ')}.`)
   if (profile.avoids?.length) lines.push(`Don't do: ${profile.avoids.slice(-5).join('; ')}.`)
   return lines.join(' ')
+}
+
+function mostFrequent(arr) {
+  const counts = {}
+  for (const v of arr) counts[v] = (counts[v] || 0) + 1
+  let max = 0, pick = null
+  for (const [k, n] of Object.entries(counts)) {
+    if (n > max) { max = n; pick = k }
+  }
+  // Only return if it's truly dominant (>=50%)
+  return max / arr.length >= 0.5 ? pick : null
 }
 
 export {

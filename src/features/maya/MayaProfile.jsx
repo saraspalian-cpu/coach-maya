@@ -104,10 +104,16 @@ export default function MayaProfile() {
 
         <Section title="Identity">
           <Row label="Name">
-            <input style={input} value={profile.name} onChange={e => update({ name: e.target.value })} />
+            <input style={input} value={profile.name} onChange={e => update({ name: e.target.value })} maxLength={50} />
           </Row>
           <Row label="Age">
-            <input style={input} type="number" value={profile.age} onChange={e => update({ age: parseInt(e.target.value) || 0 })} />
+            <input style={input} type="number" min={4} max={22} value={profile.age} onChange={e => update({ age: parseInt(e.target.value) || 0 })} />
+          </Row>
+          <Row label="Grade">
+            <input style={input} value={profile.grade || ''} onChange={e => update({ grade: e.target.value.slice(0, 12) })} placeholder="e.g. 8 or Year 9" />
+          </Row>
+          <Row label="Location">
+            <input style={input} value={profile.location || ''} onChange={e => update({ location: e.target.value.slice(0, 60) })} placeholder="e.g. Singapore" />
           </Row>
         </Section>
 
