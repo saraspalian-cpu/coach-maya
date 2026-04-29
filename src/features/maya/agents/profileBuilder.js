@@ -43,6 +43,43 @@ Rules:
 - bigGoals: extract from Q5 answer, rephrase into a clear goal
 `
 
+// ─── Sanitize Claude output: enforce shape, types, bounds ───
+function sanitizeExtracted(raw) {
+  if (!raw || typeof raw !== 'object') return null
+
+  const str = (v, max = 200) => (typeof v === 'string' ? v.slice(0, max).trim() : '')
+  const num = (v, min, max, fb) => {
+    const n = typeof v === 'number' ? v : parseInt(v)
+    return Number.isFinite(n) && n >= min && n <= max ? n : fb
+  }
+  const arr = (v, max = 20, itemMax = 80) => {
+    if (!Array.isArray(v)) return []
+    return v.filter(x => typeof x === 'string').slice(0, max).map(s => s.slice(0, itemMax).trim()).filter(Boolean)
+  }
+  const time = (v) => {
+    if (typeof v !== 'string') return '21:30'
+    const m = v.match(/^(\d{1,2}):(\d{2})$/)
+    if (!m) return '21:30'
+    const h = parseInt(m[1]), mi = parseInt(m[2])
+    if (h < 0 || h > 23 || mi < 0 || mi > 59) return '21:30'
+    return `${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`
+  }
+
+  return {
+    name: str(raw.name, 50),
+    age: num(raw.age, 4, 22, 12),
+    sports: arr(raw.sports),
+    instruments: arr(raw.instruments),
+    activities: arr(raw.activities),
+    favoriteSubjects: arr(raw.favoriteSubjects),
+    hardSubjects: arr(raw.hardSubjects),
+    bedtime: time(raw.bedtime),
+    bigGoals: arr(raw.bigGoals, 5, 200),
+    humorClues: str(raw.humorClues, 200),
+    pushClues: str(raw.pushClues, 200),
+  }
+}
+
 // ─── Claude-powered extraction ───
 async function extractWithClaude(transcript) {
   let apiKey = ''
@@ -76,7 +113,8 @@ async function extractWithClaude(transcript) {
     const text = data.content[0].text.trim()
     // Strip markdown code fences if present
     const json = text.replace(/^```json?\n?/, '').replace(/\n?```$/, '')
-    return JSON.parse(json)
+    const parsed = JSON.parse(json)
+    return sanitizeExtracted(parsed)
   } catch {
     return null
   }
@@ -179,8 +217,9 @@ async function buildProfileFromChat(answers) {
   const claudeResult = await extractWithClaude(transcript)
   if (claudeResult) return { ...claudeResult, source: 'claude' }
 
-  // Fallback to keywords
-  return { ...extractWithKeywords(answers), source: 'keywords' }
+  // Fallback to keywords (also sanitized for consistent bounds)
+  const kw = extractWithKeywords(answers)
+  return { ...(sanitizeExtracted(kw) || kw), source: 'keywords' }
 }
 
 // ─── Convert extracted profile to app profile format ───

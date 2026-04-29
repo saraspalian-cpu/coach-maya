@@ -2,10 +2,10 @@
  * Daily Ritual Flow — guided morning briefing OR evening wrap.
  * Maya speaks aloud, leads Vasco through the moment, captures intent/reflection.
  */
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
-import MayaAvatar from './components/Maya3D'
+const MayaAvatar = lazy(() => import('./components/Maya3D'))
 import { getMemoryStats, getDueConcepts } from './agents/memory'
 
 const C = {
@@ -182,7 +182,9 @@ export default function MayaRitual() {
       display: 'flex', flexDirection: 'column',
     }}>
       <div style={{ paddingTop: 16 }}>
-        <MayaAvatar state={isMorning ? 'speaking' : 'idle'} size={240} />
+        <Suspense fallback={<div style={{ height: 240 }} />}>
+          <MayaAvatar state={isMorning ? 'speaking' : 'idle'} size={240} />
+        </Suspense>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>

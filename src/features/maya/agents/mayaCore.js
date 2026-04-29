@@ -207,36 +207,56 @@ async function callClaudeAPI(systemPrompt, userPrompt, history = []) {
     content: String(m.content || '').slice(0, 2000),
   }))
 
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 30_000)
+  const body = JSON.stringify({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 250,
+    system: safeSystem,
+    messages: [
+      ...safeHistory,
+      { role: 'user', content: safeUser },
+    ],
+  })
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 250,
-        system: safeSystem,
-        messages: [
-          ...safeHistory,
-          { role: 'user', content: safeUser },
-        ],
-      }),
-    })
+  // Retry transient errors (5xx, 429) with exponential backoff
+  const MAX_RETRIES = 2
+  let lastErr
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30_000)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body,
+      })
 
-    if (!res.ok) throw new Error(`API error: ${res.status}`)
-    const data = await res.json()
-    return data.content[0].text
-  } finally {
-    clearTimeout(timeout)
+      if (res.ok) {
+        const data = await res.json()
+        return data.content[0].text
+      }
+      // 4xx (except 429) — don't retry, fail fast
+      if (res.status < 500 && res.status !== 429) {
+        throw new Error(`API error: ${res.status}`)
+      }
+      lastErr = new Error(`API error: ${res.status}`)
+    } catch (err) {
+      lastErr = err
+      // AbortError or network error — also retry
+    } finally {
+      clearTimeout(timeout)
+    }
+    if (attempt < MAX_RETRIES) {
+      const delay = 500 * Math.pow(2, attempt) + Math.random() * 250
+      await new Promise(r => setTimeout(r, delay))
+    }
   }
+  throw lastErr || new Error('API failed after retries')
 }
 
 // ─── Smart fallback chat (keyword-based, no API needed) ───

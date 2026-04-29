@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   startLessonCapture, stopLessonCapture,
@@ -14,7 +14,8 @@ import { transcribeWithWhisper } from './lib/whisper'
 import { TabAudioRecorder } from './lib/tabAudio'
 import { loadProfile } from './lib/profile'
 import { useMaya } from './context/MayaContext'
-import MayaAvatar from './components/Maya3D'
+const MayaAvatar = lazy(() => import('./components/Maya3D'))
+const AvatarFallback = ({ size = 200 }) => <div style={{ width: size, height: size }} />
 
 const C = {
   bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
@@ -571,7 +572,7 @@ export default function MayaLesson() {
                 </div>
               </div>
             )}
-            <MayaAvatar state="speaking" size={220} />
+            <Suspense fallback={<AvatarFallback size={220} />}><MayaAvatar state="speaking" size={220} /></Suspense>
             <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 16, marginTop: 8, textAlign: 'center' }}>
               I'll sit through your lesson, listen to the key parts, and quiz you afterward to lock it in.
             </p>
@@ -829,7 +830,7 @@ export default function MayaLesson() {
         {/* REVIEW PHASE */}
         {phase === 'review' && (
           <>
-            <MayaAvatar state="speaking" size={200} />
+            <Suspense fallback={<AvatarFallback size={200} />}><MayaAvatar state="speaking" size={200} /></Suspense>
             <div style={{
               padding: 14, background: C.surface, borderRadius: 12,
               border: `1px solid ${C.border}`, marginBottom: 12, marginTop: 8,
@@ -988,7 +989,7 @@ export default function MayaLesson() {
         {/* TRANSCRIBING PHASE */}
         {phase === 'transcribing' && (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <MayaAvatar state="thinking" size={220} />
+            <Suspense fallback={<AvatarFallback size={220} />}><MayaAvatar state="thinking" size={220} /></Suspense>
             <div style={{ fontFamily: C.display, fontSize: 28, color: C.teal, marginTop: 12, letterSpacing: 1.5 }}>
               TRANSCRIBING...
             </div>
@@ -1001,7 +1002,7 @@ export default function MayaLesson() {
         {/* GRADING PHASE */}
         {phase === 'grading' && (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <MayaAvatar state="thinking" size={220} />
+            <Suspense fallback={<AvatarFallback size={220} />}><MayaAvatar state="thinking" size={220} /></Suspense>
             <div style={{ fontFamily: C.display, fontSize: 28, color: C.teal, marginTop: 12, letterSpacing: 1.5 }}>
               GRADING...
             </div>
@@ -1014,7 +1015,7 @@ export default function MayaLesson() {
         {/* DONE PHASE */}
         {phase === 'done' && (
           <div style={{ textAlign: 'center', padding: '20px 8px' }}>
-            <MayaAvatar state={grading?.overallScore >= 70 ? 'celebrating' : 'idle'} size={200} />
+            <Suspense fallback={<AvatarFallback size={200} />}><MayaAvatar state={grading?.overallScore >= 70 ? 'celebrating' : 'idle'} size={200} /></Suspense>
             {grading && (
               <>
                 <div style={{
