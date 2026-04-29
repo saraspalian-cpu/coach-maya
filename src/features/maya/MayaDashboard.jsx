@@ -9,6 +9,7 @@ import { getSuggestion } from './agents/suggestions'
 import { getActiveChallenge } from './agents/challenges'
 import { getDailyFact, getDailyRiddle, getDailyQuote } from './agents/dailyContent'
 import { getPersonalGreeting } from './agents/personalGreeting'
+import { getPersonalInsight } from './agents/personalInsight'
 import { EXCUSE_OPTIONS, logSkipReason, recordTaskOutcome } from './agents/intelligence'
 import StreakHeatmap from './components/StreakHeatmap'
 
@@ -327,6 +328,9 @@ export default function MayaDashboard({ onOpenSearch }) {
 
       {/* ─── Daily content ─── */}
       <DailyContent profile={profile} />
+
+      {/* ─── Personal insight (For You) ─── */}
+      <ForYouCard navigate={navigate} profile={profile} gamification={gam} />
 
       {/* ─── Smart suggestion ─── */}
       <SuggestionCard navigate={navigate} maya={maya} />
@@ -879,6 +883,46 @@ function NavRow({ navigate }) {
           <div style={{ fontSize: 9, color: C.muted }}>{it.label}</div>
         </button>
       ))}
+    </div>
+  )
+}
+
+function ForYouCard({ navigate, profile, gamification }) {
+  const insight = useMemo(
+    () => getPersonalInsight({ profile, gamification }),
+    [profile, gamification]
+  )
+  if (!insight) return null
+  return (
+    <div
+      onClick={() => navigate(insight.action)}
+      style={{
+        margin: '10px 16px 0',
+        padding: 14,
+        background: `linear-gradient(135deg, ${insight.color}18, rgba(255,255,255,0.04))`,
+        border: `1px solid ${insight.color}55`,
+        borderRadius: 14,
+        backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+        display: 'flex', alignItems: 'center', gap: 14,
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ fontSize: 26 }}>{insight.icon}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 9, color: insight.color, textTransform: 'uppercase',
+          letterSpacing: 2, marginBottom: 3, fontWeight: 700,
+        }}>
+          For You
+        </div>
+        <div style={{ fontSize: 13, color: C.text, fontWeight: 700, lineHeight: 1.3 }}>
+          {insight.headline}
+        </div>
+        <div style={{ fontSize: 10, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>
+          {insight.sub}
+        </div>
+      </div>
+      <div style={{ fontSize: 16, color: insight.color, opacity: 0.7 }}>→</div>
     </div>
   )
 }

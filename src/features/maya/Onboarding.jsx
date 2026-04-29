@@ -20,8 +20,8 @@ const C = {
 const MAYA_QUESTIONS = [
   {
     key: 'q1',
-    text: "Hey! I'm Maya — your coach. What's your name and how old are you?",
-    placeholder: "e.g. I'm Alex, 11 years old",
+    text: "Hey! I'm Maya — your coach. What's your name, age, and where are you from?",
+    placeholder: "e.g. I'm Alex, 11, from Singapore (Grade 6)",
   },
   {
     key: 'q2',

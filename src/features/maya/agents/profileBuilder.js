@@ -19,6 +19,8 @@ Return ONLY valid JSON (no markdown, no explanation) with this exact structure:
 {
   "name": "string",
   "age": number,
+  "grade": "string",
+  "location": "string",
   "sports": ["string"],
   "instruments": ["string"],
   "activities": ["string"],
@@ -41,6 +43,8 @@ Rules:
 - If they don't mention something, use empty array []
 - Age: if not stated, guess from context or default to 12
 - bigGoals: extract from Q5 answer, rephrase into a clear goal
+- "grade" = school grade/year if mentioned (e.g. "Year 9", "8", "Grade 6") — empty string if not stated
+- "location" = city or country if mentioned (e.g. "Singapore", "London") — empty string if not stated
 `
 
 // ─── Sanitize Claude output: enforce shape, types, bounds ───
@@ -68,6 +72,8 @@ function sanitizeExtracted(raw) {
   return {
     name: str(raw.name, 50),
     age: num(raw.age, 4, 22, 12),
+    grade: str(raw.grade, 12),
+    location: str(raw.location, 60),
     sports: arr(raw.sports),
     instruments: arr(raw.instruments),
     activities: arr(raw.activities),
@@ -126,6 +132,8 @@ function extractWithKeywords(answers) {
   const result = {
     name: '',
     age: 12,
+    grade: '',
+    location: '',
     sports: [],
     instruments: [],
     activities: [],
@@ -146,6 +154,16 @@ function extractWithKeywords(answers) {
 
   const ageMatch = q1.match(/(\d{1,2})\s*(years?\s*old|yr|y\/o)?/i) || q1.match(/age\s*(\d{1,2})/i)
   if (ageMatch) result.age = parseInt(ageMatch[1])
+
+  // Grade — search across all answers
+  const allText = Object.values(answers).join(' ')
+  const gradeMatch = allText.match(/\b(?:grade|year|class|standard)\s*(\d{1,2})\b/i)
+  if (gradeMatch) result.grade = gradeMatch[1]
+
+  // Location — match common cities/countries (lightweight, opt-in via Claude path for full accuracy)
+  const LOCATIONS = ['Singapore','London','New York','Hong Kong','Tokyo','Sydney','Melbourne','Dubai','Mumbai','Paris','Berlin','Toronto','Vancouver','Seoul','Beijing','Shanghai','Bangkok','Jakarta','Manila','Auckland']
+  const locHit = LOCATIONS.find(l => new RegExp(`\\b${l}\\b`, 'i').test(allText))
+  if (locHit) result.location = locHit
 
   // Q2: Activities
   const q2 = (answers.q2 || '').toLowerCase()
@@ -246,6 +264,8 @@ function toAppProfile(extracted) {
   return {
     name: extracted.name || 'Champ',
     age: extracted.age || 12,
+    grade: extracted.grade || '',
+    location: extracted.location || '',
     hobbies,
     favoriteSubjects: extracted.favoriteSubjects || [],
     hardSubjects: extracted.hardSubjects || [],

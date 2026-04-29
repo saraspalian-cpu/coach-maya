@@ -99,12 +99,51 @@ export default function MayaWeekly() {
   const overallGrade = overallScore >= 90 ? 'S' : overallScore >= 80 ? 'A' : overallScore >= 65 ? 'B' : overallScore >= 50 ? 'C' : 'F'
   const gradeColors = { S: C.gold, A: C.green, B: C.blue, C: C.amber, F: C.red }
 
-  const commentary = overallGrade === 'S' ? "This is what elite weeks look like. Don't get comfortable — sustain it."
-    : overallGrade === 'A' ? "Strong week. You're building something. Push the weak spots."
-    : overallGrade === 'B' ? "Decent week but inconsistent. Pick one area and lock it in next week."
-    : overallGrade === 'C' ? "Below your potential. You know it. I know it. Reset and attack next week."
-    : scores.length === 0 ? "No data this week. Start tracking and the picture will come together."
-    : "Rough week. Doesn't define you. What matters is what you do next."
+  // ─── Build Maya's data-driven take on the week ───
+  const mayaTake = useMemo(() => {
+    const wins = []
+    const flags = []
+    const name = profile?.name || 'You'
+
+    if (sleepData.avg >= 9) wins.push(`Sleep ${sleepData.avg}h — recovery is locked.`)
+    else if (sleepData.daysLogged >= 3 && sleepData.avg < 7) flags.push(`Sleep ${sleepData.avg}h avg — under-recovering.`)
+
+    if (waterData.daysHit >= 5) wins.push(`Water ${waterData.daysHit}/7 days at 8+ glasses.`)
+    else if (waterData.daysLogged >= 3 && waterData.daysHit <= 2) flags.push(`Water ${waterData.daysHit}/7 — dehydration tax is real.`)
+
+    if (moodData.avg >= 4) wins.push(`Mood ${moodData.avg}/5 — handling pressure.`)
+    else if (moodData.daysLogged >= 3 && moodData.avg <= 2.5) flags.push(`Mood ${moodData.avg}/5 — something's off, name it.`)
+
+    if (workoutData.daysActive >= 5) wins.push(`Trained ${workoutData.daysActive} days.`)
+    else if (workoutData.daysActive === 0 && workoutData.sessions === 0) flags.push(`Zero workouts logged.`)
+
+    if ((profile?.currentStreak || 0) >= 7) wins.push(`Day ${profile.currentStreak} streak.`)
+
+    // Build sentence
+    if (scores.length === 0) {
+      return "No data this week. Start tracking and the picture will come together."
+    }
+    if (wins.length >= 2 && flags.length === 0) {
+      return `${wins.slice(0, 2).join(' ')} ${name}, this is what elite weeks look like — sustain it.`
+    }
+    if (wins.length >= 1 && flags.length >= 1) {
+      return `${wins[0]} But — ${flags[0].toLowerCase()} Fix it next week.`
+    }
+    if (flags.length >= 2) {
+      return `${flags.slice(0, 2).join(' ')} Reset Monday. Pick one to fix first.`
+    }
+    if (wins.length === 1) {
+      return `${wins[0]} Now stack another category next week.`
+    }
+    if (flags.length === 1) {
+      return `${flags[0]} Address it head-on.`
+    }
+    return overallGrade === 'A'
+      ? "Strong week — building something. Push the weak spots."
+      : "Solid base. Pick one area to level up next week."
+  }, [sleepData, waterData, moodData, workoutData, profile, scores.length, overallGrade])
+
+  const commentary = mayaTake
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: C.mono, paddingBottom: 80 }}>

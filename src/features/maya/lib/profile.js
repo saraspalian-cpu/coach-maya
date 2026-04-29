@@ -13,6 +13,7 @@ const DEFAULT_PROFILE = {
   age: 12,
   grade: '',           // school grade/year (e.g. "8", "Year 9")
   location: '',        // city or country (e.g. "Singapore")
+  timezone: '',        // IANA timezone (auto-detected on first save)
   pronouns: '',
   // Goals & motivation
   bigGoals: [],         // ["Make varsity tennis", "Learn piano sonata"]
@@ -62,9 +63,15 @@ function loadProfile() {
   }
 }
 
+function detectTimezone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || '' } catch { return '' }
+}
+
 function saveProfile(profile) {
   try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
+    // Auto-fill timezone if missing — used for cross-device consistency
+    const next = profile.timezone ? profile : { ...profile, timezone: detectTimezone() }
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(next))
   } catch {}
 }
 
