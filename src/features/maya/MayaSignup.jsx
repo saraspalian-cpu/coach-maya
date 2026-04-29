@@ -25,12 +25,15 @@ export default function MayaSignup() {
     e.preventDefault()
     setError('')
 
-    if (!email || !password) { setError('Email and password required'); return }
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail || !password) { setError('Email and password required'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { setError('Invalid email address'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
+    if (password.length > 128) { setError('Password too long (max 128)'); return }
     if (password !== confirm) { setError('Passwords do not match'); return }
 
     setLoading(true)
-    const result = await signUp(email, password)
+    const result = await signUp(cleanEmail, password)
     setLoading(false)
 
     if (result.error) {

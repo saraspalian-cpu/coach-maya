@@ -155,15 +155,21 @@ export default function Onboarding() {
     }
   }
 
-  const finishSetup = () => {
+  const finishSetup = async () => {
     if (!summary) return
 
     const profile = {
       ...loadProfile(),
       ...summary.profile,
     }
-    if (parentPin.length === 4) {
-      profile.parentPin = parentPin
+    if (parentPin.length === 4 && /^\d{4}$/.test(parentPin)) {
+      try {
+        const encoder = new TextEncoder()
+        const data = encoder.encode('maya_salt_' + parentPin)
+        const hash = await crypto.subtle.digest('SHA-256', data)
+        profile.parentPinHash = Array.from(new Uint8Array(hash))
+          .map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16)
+      } catch {}
     }
     saveProfile(profile)
 

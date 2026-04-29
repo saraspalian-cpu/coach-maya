@@ -22,11 +22,13 @@ export default function MayaLogin() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    if (!email || !password) return
+    const cleanEmail = email.trim().toLowerCase()
+    if (!cleanEmail || !password) return
+    if (password.length > 128) { setError('Password too long'); return }
     setError('')
     setLoading(true)
 
-    const result = await logIn(email, password)
+    const result = await logIn(cleanEmail, password)
     setLoading(false)
 
     if (result.error) {
