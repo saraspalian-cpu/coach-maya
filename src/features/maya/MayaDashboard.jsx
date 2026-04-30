@@ -10,6 +10,8 @@ import { getActiveChallenge } from './agents/challenges'
 import { getDailyFact, getDailyRiddle, getDailyQuote } from './agents/dailyContent'
 import { getPersonalGreeting } from './agents/personalGreeting'
 import { getPersonalInsight } from './agents/personalInsight'
+import { getSmartNav, trackVisit } from './agents/smartNav'
+import { getMorningBrief, dismissMorningBrief } from './agents/morningBrief'
 import { EXCUSE_OPTIONS, logSkipReason, recordTaskOutcome } from './agents/intelligence'
 import StreakHeatmap from './components/StreakHeatmap'
 
@@ -320,6 +322,9 @@ export default function MayaDashboard({ onOpenSearch }) {
         <StreakHeatmap size={8} />
       </div>
 
+      {/* ─── Morning briefing (first open of the day, mornings only) ─── */}
+      <MorningBriefCard tasks={tasks} navigate={navigate} />
+
       {/* ─── Next Competition Countdown ─── */}
       <NextCompWidget navigate={navigate} />
 
@@ -335,8 +340,8 @@ export default function MayaDashboard({ onOpenSearch }) {
       {/* ─── Smart suggestion ─── */}
       <SuggestionCard navigate={navigate} maya={maya} />
 
-      {/* ─── Quick nav scroll row ─── */}
-      <NavRow navigate={navigate} />
+      {/* ─── Quick nav scroll row (smart, personalised) ─── */}
+      <NavRow navigate={navigate} profile={profile} />
 
       {/* ─── Lesson CTA — Maya's signature feature ─── */}
       <LessonCTA navigate={navigate} />
@@ -821,69 +826,103 @@ function WeeklyChallenge() {
   )
 }
 
-function NavRow({ navigate }) {
-  const items = [
-    { icon: '🎙', label: 'Vault', to: '/lessons' },
-    { icon: '🧠', label: 'Memory', to: '/memory' },
-    { icon: '🎯', label: 'Goals', to: '/goals' },
-    { icon: '📝', label: 'Homework', to: '/homework' },
-    { icon: '🃏', label: 'Flash', to: '/flashcards' },
-    { icon: '🎾', label: 'Tennis', to: '/tennis' },
-    { icon: '🎹', label: 'Piano', to: '/piano' },
-    { icon: '📖', label: 'Reading', to: '/reading' },
-    { icon: '💡', label: 'Explain', to: '/explain' },
-    { icon: '⏲', label: 'Timer', to: '/timer' },
-    { icon: '📱', label: 'Screen', to: '/screentime' },
-    { icon: '🔤', label: 'Vocab', to: '/vocab' },
-    { icon: '✅', label: 'Habits', to: '/habits' },
-    { icon: '🧮', label: 'Math', to: '/mathdrill' },
-    { icon: '⌨️', label: 'Typing', to: '/typing' },
-    { icon: '😴', label: 'Sleep', to: '/sleep' },
-    { icon: '💧', label: 'Water', to: '/water' },
-    { icon: '🏋️', label: 'Workout', to: '/workout' },
-    { icon: '💜', label: 'Moods', to: '/moods' },
-    { icon: '📋', label: 'Weekly', to: '/weekly' },
-    { icon: '📋', label: 'Briefing', to: '/briefing' },
-    { icon: '🏆', label: 'Comps', to: '/competitions' },
-    { icon: '🏅', label: 'Trophies', to: '/trophies' },
-    { icon: '🎯', label: 'Prep', to: '/prep' },
-    { icon: '📊', label: 'Analytics', to: '/analytics' },
-    { icon: '🧿', label: 'Intel', to: '/intel' },
-    { icon: '🏋️', label: 'Records', to: '/records' },
-    { icon: '📰', label: 'News', to: '/news' },
-    { icon: '⏱', label: 'Focus', to: '/focus' },
-    { icon: '📈', label: 'Insights', to: '/insights' },
-    { icon: '📜', label: 'Story', to: '/story' },
-    { icon: '📓', label: 'Journal', to: '/journal' },
-    { icon: '🛒', label: 'Shop', to: '/shop' },
-    { icon: '👪', label: 'Parent', to: '/parent' },
-    { icon: '⚙', label: 'Schedule', to: '/schedule' },
-    { icon: '?', label: 'Help', to: '/help' },
-  ]
+function NavRow({ navigate, profile }) {
+  const [showMore, setShowMore] = useState(false)
+  const { primary, overflow } = useMemo(
+    () => getSmartNav({ profile }),
+    [profile]
+  )
+  const go = (route) => { trackVisit(route); navigate(route) }
+
   return (
-    <div style={{
-      display: 'flex', gap: 8, padding: '10px 16px',
-      overflowX: 'auto', borderBottom: `1px solid ${C.glassBorder}`,
-      background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
-    }}>
-      {items.map(it => (
+    <>
+      <div style={{
+        display: 'flex', gap: 8, padding: '10px 16px',
+        overflowX: 'auto', borderBottom: `1px solid ${C.glassBorder}`,
+        background: C.glass, backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+      }}>
+        {primary.map(it => (
+          <button
+            key={it.to}
+            onClick={() => go(it.to)}
+            style={{
+              flex: '0 0 auto', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: 4,
+              padding: '8px 12px', minWidth: 60,
+              background: C.surfaceLight, border: `1px solid ${C.glassBorder}`,
+              borderRadius: 14, color: C.text, fontFamily: C.mono, cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <div style={{ fontSize: 18 }}>{it.icon}</div>
+            <div style={{ fontSize: 9, color: C.muted }}>{it.label}</div>
+          </button>
+        ))}
         <button
-          key={it.to}
-          onClick={() => navigate(it.to)}
+          onClick={() => setShowMore(true)}
           style={{
             flex: '0 0 auto', display: 'flex', flexDirection: 'column',
             alignItems: 'center', gap: 4,
             padding: '8px 12px', minWidth: 60,
-            background: C.surfaceLight, border: `1px solid ${C.glassBorder}`,
+            background: 'rgba(167,139,250,0.10)', border: `1px solid rgba(167,139,250,0.35)`,
             borderRadius: 14, color: C.text, fontFamily: C.mono, cursor: 'pointer',
-            transition: 'all 0.2s ease',
           }}
         >
-          <div style={{ fontSize: 18 }}>{it.icon}</div>
-          <div style={{ fontSize: 9, color: C.muted }}>{it.label}</div>
+          <div style={{ fontSize: 18 }}>⋯</div>
+          <div style={{ fontSize: 9, color: C.purple }}>More</div>
         </button>
-      ))}
-    </div>
+      </div>
+
+      {showMore && (
+        <div
+          onClick={() => setShowMore(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 200,
+            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 480, maxHeight: '70vh',
+              background: '#12121e', borderTop: `1px solid ${C.glassBorder}`,
+              borderTopLeftRadius: 20, borderTopRightRadius: 20,
+              padding: 16, overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontFamily: C.display, fontSize: 18, color: C.teal, letterSpacing: 2 }}>ALL TOOLS</div>
+              <button
+                onClick={() => setShowMore(false)}
+                style={{
+                  background: 'transparent', border: 'none', color: C.muted,
+                  fontSize: 18, cursor: 'pointer',
+                }}
+              >✕</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {overflow.map(it => (
+                <button
+                  key={it.to}
+                  onClick={() => { go(it.to); setShowMore(false) }}
+                  style={{
+                    padding: 12, background: C.surfaceLight,
+                    border: `1px solid ${C.glassBorder}`, borderRadius: 12,
+                    color: C.text, fontFamily: C.mono, cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  <div style={{ fontSize: 22 }}>{it.icon}</div>
+                  <div style={{ fontSize: 9, color: C.muted }}>{it.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -1088,6 +1127,72 @@ function IconBtn({ children, onClick, title }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
     >{children}</button>
+  )
+}
+
+function MorningBriefCard({ tasks, navigate }) {
+  const brief = useMemo(() => getMorningBrief({ tasks }), [tasks])
+  const [dismissed, setDismissed] = useState(false)
+  if (!brief || dismissed) return null
+
+  const dismiss = () => {
+    dismissMorningBrief()
+    setDismissed(true)
+  }
+
+  return (
+    <div style={{
+      margin: '10px 16px 0',
+      padding: 16,
+      background: `linear-gradient(135deg, rgba(255,165,0,0.16), rgba(167,139,250,0.10))`,
+      border: `1px solid rgba(255,165,0,0.35)`,
+      borderRadius: 16,
+      backdropFilter: C.blur, WebkitBackdropFilter: C.blur,
+      position: 'relative',
+    }}>
+      <button
+        onClick={dismiss}
+        style={{
+          position: 'absolute', top: 8, right: 8,
+          background: 'transparent', border: 'none',
+          color: C.muted, fontSize: 14, cursor: 'pointer',
+          width: 24, height: 24,
+        }}
+        title="Dismiss"
+      >✕</button>
+      <div style={{ fontSize: 9, color: '#FFA500', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>
+        ☀ Morning brief
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: C.text, lineHeight: 1.3, marginBottom: 8 }}>
+        {brief.greeting}
+      </div>
+      {brief.yesterdayWin && (
+        <div style={{ fontSize: 11, color: C.green, marginBottom: 6 }}>
+          ✓ Yesterday: {brief.yesterdayWin}
+        </div>
+      )}
+      <div style={{ fontSize: 12, color: C.text, lineHeight: 1.5, marginBottom: 6 }}>
+        <span style={{ color: C.purple, fontWeight: 700 }}>Today:</span> {brief.focus}
+      </div>
+      <div style={{
+        marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(255,255,255,0.08)`,
+        fontSize: 12, color: C.text, fontStyle: 'italic', lineHeight: 1.4,
+      }}>
+        "{brief.mayaLine}"
+      </div>
+      {brief.today.firstTask && (
+        <button
+          onClick={() => navigate('/')}
+          style={{
+            marginTop: 12, padding: '8px 14px',
+            background: '#FFA500', color: '#0a0a14',
+            border: 'none', borderRadius: 10,
+            fontSize: 12, fontFamily: C.mono, fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >Start: {brief.today.firstTask} →</button>
+      )}
+    </div>
   )
 }
 

@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 import { loadMoods } from './lib/moods'
+import { getScheduleProposals } from './agents/adaptiveScheduler'
 
 const C = {
   bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
@@ -173,6 +174,9 @@ export default function MayaWeekly() {
           {commentary}
         </div>
 
+        {/* Adaptive scheduler proposals */}
+        <ScheduleProposals navigate={navigate} />
+
         {/* Category cards */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
           <CategoryCard
@@ -278,6 +282,71 @@ function CategoryCard({ icon, title, color, main, sub, score, onClick }) {
       </div>
       <div style={{ fontSize: 13, color: C.text, fontWeight: 600, marginTop: 6 }}>{main}</div>
       <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{sub}</div>
+    </div>
+  )
+}
+
+function ScheduleProposals({ navigate }) {
+  const proposals = useMemo(() => getScheduleProposals(), [])
+  if (!proposals || proposals.length === 0) return null
+
+  const KIND_COLOR = {
+    reduce: C.amber,
+    reorder: C.amber,
+    protect: C.green,
+    energy: C.purple,
+  }
+  const KIND_ICON = {
+    reduce: '↓',
+    reorder: '↻',
+    protect: '✓',
+    energy: '⚡',
+  }
+
+  return (
+    <div style={{
+      padding: 14, background: C.surface, borderRadius: 12,
+      border: `1px solid ${C.border}`, borderLeft: `3px solid ${C.purple}`,
+      marginBottom: 16,
+    }}>
+      <div style={{ fontSize: 10, color: C.purple, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+        Maya wants to adjust your schedule
+      </div>
+      {proposals.map(p => {
+        const color = KIND_COLOR[p.kind] || C.muted
+        return (
+          <div key={p.id} style={{
+            padding: '8px 0',
+            borderBottom: `1px solid ${C.border}`,
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+          }}>
+            <div style={{
+              width: 22, height: 22, flexShrink: 0,
+              borderRadius: '50%', background: color + '22',
+              border: `1px solid ${color}55`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, color,
+            }}>{KIND_ICON[p.kind] || '·'}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, color: C.text, fontWeight: 600, lineHeight: 1.3 }}>
+                {p.title}
+              </div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 2, lineHeight: 1.4 }}>
+                {p.body}
+              </div>
+            </div>
+          </div>
+        )
+      })}
+      <button
+        onClick={() => navigate('/schedule')}
+        style={{
+          marginTop: 10, padding: '8px 14px',
+          background: 'transparent', border: `1px solid ${C.purple}`,
+          borderRadius: 8, color: C.purple, fontSize: 11,
+          fontFamily: C.mono, cursor: 'pointer',
+        }}
+      >Edit schedule →</button>
     </div>
   )
 }
