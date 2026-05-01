@@ -162,6 +162,40 @@ function MayaProvider({ children }) {
     } catch {}
   }, [])
 
+  // URL-driven profile patcher: ?fixProfile=age:14,name:Vasco,grade:9
+  // Strips the query param after applying so it doesn't re-run.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const raw = params.get('fixProfile')
+      if (!raw) return
+      const ALLOWED_KEYS = new Set(['age', 'name', 'grade', 'location', 'voiceAutoSpeak', 'voiceEnabled'])
+      const patch = {}
+      for (const pair of raw.split(',')) {
+        const [k, v] = pair.split(':').map(s => s?.trim())
+        if (!k || v == null || !ALLOWED_KEYS.has(k)) continue
+        if (k === 'age') {
+          const n = parseInt(v)
+          if (Number.isFinite(n) && n >= 4 && n <= 22) patch.age = n
+        } else if (k === 'voiceAutoSpeak' || k === 'voiceEnabled') {
+          patch[k] = v === 'true' || v === '1'
+        } else {
+          patch[k] = String(v).slice(0, 60)
+        }
+      }
+      if (Object.keys(patch).length) {
+        const p = loadProfile()
+        const merged = { ...p, ...patch }
+        saveProfile(merged)
+        dispatch({ type: 'SET_PROFILE', payload: merged })
+      }
+      params.delete('fixProfile')
+      const qs = params.toString()
+      const url = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash
+      window.history.replaceState({}, '', url)
+    } catch {}
+  }, [])
+
   // Auto-speak Maya messages + send notification if backgrounded
   useEffect(() => {
     const last = state.messages[state.messages.length - 1]

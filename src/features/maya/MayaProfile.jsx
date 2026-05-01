@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { loadProfile, saveProfile } from './lib/profile'
+import { loadProfile, saveProfile, clearApiKeys } from './lib/profile'
 import { listAllVoices, waitForVoices, speak, cancelSpeech } from './lib/voice'
 import VoiceStatus from './components/VoiceStatus'
 
@@ -187,6 +187,7 @@ export default function MayaProfile() {
         <Section title="Maya's Brain (Claude API)">
           <p style={{ fontSize: 10, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
             Without a key Maya uses fallback templates. With a Claude API key she actually thinks. Get one at console.anthropic.com.
+            <br/><span style={{ color: C.red }}>Keys are stored in this browser's localStorage. Don't share screenshots of devtools.</span>
           </p>
           <Row label="Anthropic API Key">
             <input
@@ -197,6 +198,19 @@ export default function MayaProfile() {
               placeholder="sk-ant-..."
             />
           </Row>
+          <button
+            onClick={() => {
+              if (confirm('Wipe all API keys from this device? You will need to re-enter them to use Claude / Whisper / ElevenLabs.')) {
+                clearApiKeys()
+                setProfile(loadProfile())
+              }
+            }}
+            style={{
+              marginTop: 10, padding: '8px 14px', background: 'transparent',
+              border: `1px solid ${C.red}`, borderRadius: 8,
+              color: C.red, fontSize: 11, fontFamily: C.mono, cursor: 'pointer',
+            }}
+          >Clear all API keys</button>
         </Section>
 
         <Section title="Lesson Transcription (Whisper) ⭐">

@@ -57,10 +57,32 @@ function loadProfile() {
     const raw = localStorage.getItem(PROFILE_KEY)
     if (!raw) return { ...DEFAULT_PROFILE }
     const parsed = JSON.parse(raw)
+    // Strip legacy plaintext parentPin — older versions stored it un-hashed.
+    // Once parentPinHash exists, the plaintext is never needed again.
+    if (parsed && typeof parsed === 'object' && parsed.parentPin) {
+      delete parsed.parentPin
+      try { localStorage.setItem(PROFILE_KEY, JSON.stringify(parsed)) } catch {}
+    }
     return { ...DEFAULT_PROFILE, ...parsed, version: PROFILE_VERSION }
   } catch {
     return { ...DEFAULT_PROFILE }
   }
+}
+
+/**
+ * Wipe all API keys from the profile. Useful before handing off the device
+ * or sharing a screenshot of localStorage. Doesn't touch other profile fields.
+ */
+function clearApiKeys() {
+  try {
+    const p = loadProfile()
+    saveProfile({
+      ...p,
+      anthropicApiKey: '',
+      openaiApiKey: '',
+      elevenLabsApiKey: '',
+    })
+  } catch {}
 }
 
 function detectTimezone() {
@@ -170,4 +192,5 @@ export {
   saveProfile,
   updateProfile,
   buildPersonalityContext,
+  clearApiKeys,
 }

@@ -152,8 +152,17 @@ function extractWithKeywords(answers) {
     || q1.match(/^(\w+)/)
   if (nameMatch) result.name = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1).toLowerCase()
 
-  const ageMatch = q1.match(/(\d{1,2})\s*(years?\s*old|yr|y\/o)?/i) || q1.match(/age\s*(\d{1,2})/i)
-  if (ageMatch) result.age = parseInt(ageMatch[1])
+  // Try explicit age patterns first, then fall back to a bounded bare digit
+  const ageMatch =
+    q1.match(/\b(\d{1,2})\s*(?:years?\s*old|yrs?\s*old|y\/?o|yo)\b/i) ||
+    q1.match(/\bage[d]?\s*(?:is\s*)?(\d{1,2})\b/i) ||
+    q1.match(/\bi(?:'?m| am)\s*(\d{1,2})\b/i) ||
+    q1.match(/\bturning\s*(\d{1,2})\b/i) ||
+    q1.match(/\b(\d{1,2})\b/) // last resort: any standalone 1–2 digit number
+  if (ageMatch) {
+    const n = parseInt(ageMatch[1])
+    if (Number.isFinite(n) && n >= 4 && n <= 22) result.age = n
+  }
 
   // Grade — search across all answers
   const allText = Object.values(answers).join(' ')

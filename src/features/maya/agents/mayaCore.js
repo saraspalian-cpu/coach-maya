@@ -171,20 +171,38 @@ async function generateMessage(type, context, personalityContext = '', history =
   }
 }
 
-// ─── Claude API Call (with rate limiting to prevent runaway costs) ───
-const RATE_LIMIT = { maxPerHour: 200, maxPerMinute: 20, calls: [] }
+// ─── Claude API Call (with persisted rate limiting to prevent runaway costs) ───
+// Persisted across reloads so a child mashing F5 can't bypass the cap.
+const RATE_LIMIT = { maxPerHour: 200, maxPerMinute: 20, maxPerDay: 1000 }
+const RATE_KEY = 'maya_rate_limit_calls'
+
+function loadCalls() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RATE_KEY) || '[]')
+    return Array.isArray(raw) ? raw.filter(t => typeof t === 'number') : []
+  } catch { return [] }
+}
+function saveCalls(arr) {
+  try { localStorage.setItem(RATE_KEY, JSON.stringify(arr)) } catch {}
+}
 
 function checkRateLimit() {
   const now = Date.now()
-  RATE_LIMIT.calls = RATE_LIMIT.calls.filter(t => now - t < 3600_000)
-  const lastMinute = RATE_LIMIT.calls.filter(t => now - t < 60_000).length
-  if (RATE_LIMIT.calls.length >= RATE_LIMIT.maxPerHour) {
+  const all = loadCalls().filter(t => now - t < 86400_000) // keep last 24h
+  const lastHour = all.filter(t => now - t < 3600_000)
+  const lastMinute = all.filter(t => now - t < 60_000)
+  if (all.length >= RATE_LIMIT.maxPerDay) {
+    throw new Error('Daily API limit reached — using fallback')
+  }
+  if (lastHour.length >= RATE_LIMIT.maxPerHour) {
     throw new Error('Hourly API limit reached — using fallback')
   }
-  if (lastMinute >= RATE_LIMIT.maxPerMinute) {
+  if (lastMinute.length >= RATE_LIMIT.maxPerMinute) {
     throw new Error('Per-minute API limit reached — using fallback')
   }
-  RATE_LIMIT.calls.push(now)
+  all.push(now)
+  // Cap stored array so localStorage doesn't grow unbounded
+  saveCalls(all.slice(-RATE_LIMIT.maxPerDay))
 }
 
 async function callClaudeAPI(systemPrompt, userPrompt, history = []) {

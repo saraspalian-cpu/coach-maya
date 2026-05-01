@@ -40,10 +40,10 @@ function evaluateSchedule({ tasks, currentTime, combo, lastActivityTime }) {
 
   if (nextTask) {
     const startTime = new Date(nextTask.startTime)
-    const minutesUntil = (startTime - now) / 60000
+    const minutesUntil = isNaN(startTime.getTime()) ? null : (startTime - now) / 60000
 
     // 15 min before block
-    if (minutesUntil > 0 && minutesUntil <= 15) {
+    if (minutesUntil != null && minutesUntil > 0 && minutesUntil <= 15) {
       nudges.push({
         type: NUDGE_TYPES.PRE_TASK,
         urgency: URGENCY.LOW,
@@ -54,7 +54,7 @@ function evaluateSchedule({ tasks, currentTime, combo, lastActivityTime }) {
     }
 
     // Task overdue
-    if (minutesUntil < 0) {
+    if (minutesUntil != null && minutesUntil < 0) {
       const minutesOverdue = Math.abs(Math.round(minutesUntil))
       nudges.push({
         type: NUDGE_TYPES.OVERDUE,

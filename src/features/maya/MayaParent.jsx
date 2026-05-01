@@ -21,32 +21,59 @@ async function hashPin(pin) {
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16)
 }
 
+// Persisted PIN lockout — survives reload + localStorage clear of just `attempts`
+const LOCK_KEY = 'maya_parent_lockout'
+const MAX_ATTEMPTS = 5
+const LOCKOUT_MS = 5 * 60 * 1000          // 5 min after 5 misses
+const ESCALATED_LOCKOUT_MS = 60 * 60 * 1000 // 1 hr after 10 cumulative misses
+function readLockout() {
+  try { return JSON.parse(localStorage.getItem(LOCK_KEY) || '{}') } catch { return {} }
+}
+function writeLockout(v) {
+  try { localStorage.setItem(LOCK_KEY, JSON.stringify(v)) } catch {}
+}
+
 function PinGate({ onUnlock }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState(false)
-  const [attempts, setAttempts] = useState(0)
-  const [locked, setLocked] = useState(false)
   const [settingPin, setSettingPin] = useState(false)
+  const [lockMsg, setLockMsg] = useState('')
   const profile = loadProfile()
   const hasPin = !!profile.parentPinHash
 
+  const lockedNow = () => {
+    const l = readLockout()
+    if (l.until && Date.now() < l.until) return l.until
+    return null
+  }
+
   const checkPin = async () => {
-    if (locked) return
+    const until = lockedNow()
+    if (until) {
+      const sec = Math.ceil((until - Date.now()) / 1000)
+      setLockMsg(`Locked. Try again in ${sec >= 60 ? Math.ceil(sec / 60) + ' min' : sec + 's'}.`)
+      return
+    }
     const hashed = await hashPin(pin)
     if (hashed === profile.parentPinHash) {
       sessionStorage.setItem('parent_unlocked', '1')
-      setAttempts(0)
+      writeLockout({}) // reset on success
       onUnlock()
     } else {
-      const next = attempts + 1
-      setAttempts(next)
+      const l = readLockout()
+      const attempts = (l.attempts || 0) + 1
+      const total = (l.total || 0) + 1
+      const update = { attempts, total }
+      if (attempts >= MAX_ATTEMPTS) {
+        update.until = Date.now() + (total >= 10 ? ESCALATED_LOCKOUT_MS : LOCKOUT_MS)
+        update.attempts = 0 // reset window counter, keep cumulative
+        const mins = Math.ceil((update.until - Date.now()) / 60000)
+        setLockMsg(`Locked. Try again in ${mins} min.`)
+      }
+      writeLockout(update)
       setError(true)
       setPin('')
       setTimeout(() => setError(false), 1500)
-      if (next >= 5) {
-        setLocked(true)
-        setTimeout(() => { setLocked(false); setAttempts(0) }, 30000)
-      }
     }
   }
 
@@ -106,8 +133,8 @@ function PinGate({ onUnlock }) {
             transition: 'border-color 200ms',
           }}
         />
-        {error && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>Wrong PIN{attempts >= 3 ? ` (${5 - attempts} tries left)` : ''}</div>}
-        {locked && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>Too many attempts. Wait 30 seconds.</div>}
+        {error && !lockMsg && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>Wrong PIN</div>}
+        {lockMsg && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>{lockMsg}</div>}
         <div style={{ marginTop: 16 }}>
           <button
             onClick={settingPin ? setNewPin : checkPin}

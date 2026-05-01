@@ -79,7 +79,7 @@ export default function MayaWeekly() {
   const workoutData = useMemo(() => {
     const workouts = loadLS('maya_workouts') || []
     const weekWorkouts = workouts.filter(w => weekDates.includes(w.date))
-    const totalExercises = weekWorkouts.reduce((s, w) => s + w.exerciseCount, 0)
+    const totalExercises = weekWorkouts.reduce((s, w) => s + (Number(w?.exerciseCount) || 0), 0)
     return { sessions: weekWorkouts.length, totalExercises, daysActive: new Set(weekWorkouts.map(w => w.date)).size }
   }, [weekDates])
 

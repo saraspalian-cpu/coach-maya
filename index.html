@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#0a0a14" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.anthropic.com https://api.elevenlabs.io https://api.openai.com https://api.allorigins.win https://api.dictionaryapi.dev https://*.supabase.co; img-src 'self' data: blob:; media-src 'self' blob:; frame-ancestors 'none';" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' blob: https://api.anthropic.com https://api.elevenlabs.io https://api.openai.com https://api.allorigins.win https://api.dictionaryapi.dev https://*.supabase.co; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; frame-ancestors 'none';" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
@@ -61,21 +61,7 @@
       <div class="pulse"></div>
     </div>
     <div id="root"></div>
-    <script>
-      // Hide boot screen once React mounts
-      const obs = new MutationObserver(() => {
-        const root = document.getElementById('root')
-        if (root && root.children.length > 0) {
-          const boot = document.getElementById('boot')
-          if (boot) {
-            boot.classList.add('gone')
-            setTimeout(() => boot.remove(), 500)
-          }
-          obs.disconnect()
-        }
-      })
-      obs.observe(document.getElementById('root'), { childList: true })
-    </script>
+    <script src="/boot.js"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

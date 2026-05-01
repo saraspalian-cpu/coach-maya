@@ -54,10 +54,51 @@ function pickClip(names = [], state) {
   }
 }
 
+// Tint materials whose mesh/material name matches a pattern, when the GLB
+// ships without baked colors (everything renders flat-white otherwise).
+const COLOR_RULES = [
+  { keys: ['skin', 'face', 'body', 'head', 'arm', 'hand', 'leg', 'foot', 'neck'], color: '#e8b89c' },
+  { keys: ['hair', 'eyebrow', 'brow', 'lash'],                                      color: '#3a2418' },
+  { keys: ['eye_white', 'sclera'],                                                  color: '#ffffff' },
+  { keys: ['iris', 'pupil', 'eyeball', 'eye'],                                      color: '#2a1a10' },
+  { keys: ['lip', 'mouth'],                                                         color: '#c46a6a' },
+  { keys: ['shirt', 'top', 'jacket', 'hoodie', 'sweater'],                          color: '#2DD4BF' },
+  { keys: ['pants', 'jean', 'trouser', 'short', 'skirt'],                           color: '#1f2a44' },
+  { keys: ['shoe', 'sneaker', 'boot', 'sock'],                                      color: '#222230' },
+]
+
+function pickColor(name) {
+  const n = (name || '').toLowerCase()
+  for (const rule of COLOR_RULES) {
+    if (rule.keys.some(k => n.includes(k))) return rule.color
+  }
+  return null
+}
+
 function Model({ state, mouseRef }) {
   const group = useRef()
   const { scene, animations } = useGLTF('/maya.glb')
   const { actions, names } = useAnimations(animations, group)
+
+  // Fallback colorizer: only tints meshes whose material is flat-white with no
+  // texture map (the GLB ships some untextured pieces).
+  useEffect(() => {
+    scene.traverse((obj) => {
+      if (!obj.isMesh || !obj.material) return
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+      mats.forEach(m => {
+        if (!m || !m.color) return
+        const isWhite = m.color.r > 0.95 && m.color.g > 0.95 && m.color.b > 0.95
+        const noMap = !m.map
+        if (!(isWhite && noMap)) return
+        const tint = pickColor(m.name) || pickColor(obj.name) || '#bfbfd4'
+        m.color = new THREE.Color(tint)
+        if ('metalness' in m) m.metalness = Math.min(m.metalness ?? 0, 0.1)
+        if ('roughness' in m) m.roughness = Math.max(m.roughness ?? 0.5, 0.6)
+        m.needsUpdate = true
+      })
+    })
+  }, [scene])
 
   // Discover head + jaw + morph targets once
   const rig = useMemo(() => {
@@ -200,9 +241,11 @@ function CanvasInner({ state, mouseRef, glow }) {
         canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault() })
       }}
     >
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[3, 4, 5]} intensity={1.3} />
-      <directionalLight position={[-3, 2, -2]} intensity={0.5} color={glow} />
+      <ambientLight intensity={1.1} />
+      <hemisphereLight color="#ffffff" groundColor="#1a1a2e" intensity={0.9} />
+      <directionalLight position={[3, 4, 5]} intensity={1.4} />
+      <directionalLight position={[-3, 2, -2]} intensity={0.6} color={glow} />
+      <directionalLight position={[0, 2, -4]} intensity={0.4} />
       <Suspense fallback={null}>
         <Bounds fit clip observe margin={1.05}>
           <Center>
