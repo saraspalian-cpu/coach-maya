@@ -109,9 +109,10 @@ function getSmartNav({ profile = {}, now } = {}) {
   // Imminent competition
   let hasImminentComp = false
   try {
-    const comps = JSON.parse(localStorage.getItem('maya_competitions') || '[]')
+    const compsRaw = JSON.parse(localStorage.getItem('maya_competitions') || '[]')
+    const comps = Array.isArray(compsRaw) ? compsRaw : []
     const today = todayStr()
-    hasImminentComp = (comps || []).some(c => {
+    hasImminentComp = comps.some(c => {
       if (!c?.date || c.date < today) return false
       const days = Math.ceil((new Date(c.date) - new Date(today)) / 86400000)
       return days <= 14

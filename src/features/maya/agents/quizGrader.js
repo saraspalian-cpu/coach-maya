@@ -3,12 +3,10 @@
  * Returns { score 0-100, feedback, perQuestion: [{score, note}] }
  */
 
+import { getApiKey } from '../lib/secrets'
+
 async function callClaudeGrader(systemPrompt, userPrompt) {
-  let apiKey = ''
-  try {
-    const profile = JSON.parse(localStorage.getItem('maya_profile') || '{}')
-    apiKey = profile.anthropicApiKey || ''
-  } catch {}
+  const apiKey = getApiKey('anthropic')
   if (!apiKey) throw new Error('no key')
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {

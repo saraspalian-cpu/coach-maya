@@ -72,7 +72,7 @@ export default function MayaFocus() {
     // Easier: log a manual event the user can see
     try {
       const state = JSON.parse(localStorage.getItem('maya_state') || '{}')
-      state.dayLog = state.dayLog || []
+      if (!Array.isArray(state.dayLog)) state.dayLog = []
       state.dayLog.push({
         type: 'task_complete',
         task: `${duration}m focus block`,

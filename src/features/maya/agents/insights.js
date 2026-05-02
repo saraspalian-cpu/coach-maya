@@ -9,7 +9,7 @@ import { loadMemory } from './memory'
 function loadDayLog() {
   try {
     const state = JSON.parse(localStorage.getItem('maya_state') || '{}')
-    return state.dayLog || []
+    return Array.isArray(state?.dayLog) ? state.dayLog : []
   } catch { return [] }
 }
 

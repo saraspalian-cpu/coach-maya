@@ -7,10 +7,16 @@ import { loadHistory } from './lessonAnalyst'
 import { loadMemory } from './memory'
 
 function loadDayLog() {
-  try { return JSON.parse(localStorage.getItem('maya_state') || '{}').dayLog || [] } catch { return [] }
+  try {
+    const log = JSON.parse(localStorage.getItem('maya_state') || '{}').dayLog
+    return Array.isArray(log) ? log : []
+  } catch { return [] }
 }
 function loadProfile() {
-  try { return JSON.parse(localStorage.getItem('maya_profile') || '{}') } catch { return {} }
+  try {
+    const p = JSON.parse(localStorage.getItem('maya_profile') || '{}')
+    return p && typeof p === 'object' && !Array.isArray(p) ? p : {}
+  } catch { return {} }
 }
 
 function getRecords() {
@@ -29,7 +35,12 @@ function getRecords() {
   })
 
   // Highest combo
-  const gamState = (() => { try { return JSON.parse(localStorage.getItem('maya_state') || '{}').gamification || {} } catch { return {} } })()
+  const gamState = (() => {
+    try {
+      const g = JSON.parse(localStorage.getItem('maya_state') || '{}').gamification
+      return g && typeof g === 'object' && !Array.isArray(g) ? g : {}
+    } catch { return {} }
+  })()
   records.push({
     icon: '⚡', label: 'Highest combo',
     value: `${gamState.combo || 0}×`,

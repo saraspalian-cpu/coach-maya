@@ -5,6 +5,7 @@
  */
 
 import { loadProfile } from './profile'
+import { getApiKey } from './secrets'
 
 // ─── TTS: Maya Speaking ───
 let voicesCache = null
@@ -71,7 +72,7 @@ function listAllVoices() {
 
 // ─── ElevenLabs (premium) ───
 async function speakElevenLabs(text, profile, callbacks = {}) {
-  const apiKey = profile.elevenLabsApiKey?.trim()
+  const apiKey = getApiKey('elevenlabs')
   // Default to Drew (chill basketball player) if key set but no voice picked
   const voiceId = profile.elevenLabsVoiceId?.trim() || '29vD33N1CtxCmqQRPOHJ'
   if (!apiKey) throw new Error('No ElevenLabs API key')
@@ -127,7 +128,8 @@ async function speak(text, { onStart, onBoundary, onEnd, onError } = {}) {
   const profile = loadProfile()
 
   // Try ElevenLabs first if configured
-  if (profile?.elevenLabsApiKey && profile?.elevenLabsVoiceId) {
+  const elevenKey = getApiKey('elevenlabs')
+  if (elevenKey && profile?.elevenLabsVoiceId) {
     try {
       await speakElevenLabs(text, profile, { onStart, onEnd, onError })
       return
@@ -139,10 +141,6 @@ async function speak(text, { onStart, onBoundary, onEnd, onError } = {}) {
         }
       } catch {}
     }
-  } else if (profile?.elevenLabsApiKey && !profile?.elevenLabsVoiceId) {
-    // ElevenLabs key set but no voice ID
-  } else {
-    // Using system voice (no ElevenLabs key)
   }
 
   if (!('speechSynthesis' in window)) {

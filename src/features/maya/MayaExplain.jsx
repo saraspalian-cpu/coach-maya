@@ -6,6 +6,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadProfile } from './lib/profile'
+import { getApiKey } from './lib/secrets'
 
 const C = {
   bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
@@ -46,16 +47,16 @@ export default function MayaExplain() {
     setLoading(true)
     setHistory(h => [...h, { type: 'user', text: question }])
 
-    const profile = loadProfile()
+    const apiKey = getApiKey('anthropic')
     let answer
 
-    if (profile.anthropicApiKey) {
+    if (apiKey) {
       try {
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': profile.anthropicApiKey,
+            'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
             'anthropic-dangerous-direct-browser-access': 'true',
           },

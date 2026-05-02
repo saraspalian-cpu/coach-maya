@@ -4,6 +4,8 @@
  * Uses Claude API for generation, with strict voice rules.
  */
 
+import { getApiKey } from '../lib/secrets'
+
 // ─── Maya's System Prompt ───
 const MAYA_SYSTEM_PROMPT = `You are Maya, an AI performance coach. You live on the kid's desk. You are their coach — not their parent, not their teacher. Think elite sports psychologist meets sarcastic older sibling meets startup co-founder.
 
@@ -207,14 +209,7 @@ function checkRateLimit() {
 
 async function callClaudeAPI(systemPrompt, userPrompt, history = []) {
   checkRateLimit()
-  // Read key from profile (preferred) or env var (fallback)
-  let apiKey = ''
-  try {
-    const profile = JSON.parse(localStorage.getItem('maya_profile') || '{}')
-    apiKey = profile.anthropicApiKey || import.meta.env.VITE_ANTHROPIC_API_KEY || ''
-  } catch {
-    apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
-  }
+  const apiKey = getApiKey('anthropic')
   if (!apiKey) throw new Error('No API key configured')
 
   // Cap inputs to prevent token-bombing via huge user input

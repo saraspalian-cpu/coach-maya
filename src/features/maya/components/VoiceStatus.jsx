@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react'
 import { loadProfile } from '../lib/profile'
+import { getApiKey } from '../lib/secrets'
 import { speak, cancelSpeech } from '../lib/voice'
 
 const C = {
@@ -97,7 +98,7 @@ export default function VoiceStatus() {
 
 function getStatus() {
   const profile = loadProfile()
-  const hasKey = !!profile?.elevenLabsApiKey?.trim()
+  const hasKey = !!getApiKey('elevenlabs')
   const hasVoice = !!profile?.elevenLabsVoiceId?.trim()
 
   if (hasKey && hasVoice) {

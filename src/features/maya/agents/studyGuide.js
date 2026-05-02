@@ -10,15 +10,10 @@
  *  - "Explain to a friend" challenge
  */
 
-async function getApiKey() {
-  try {
-    const profile = JSON.parse(localStorage.getItem('maya_profile') || '{}')
-    return profile.anthropicApiKey || ''
-  } catch { return '' }
-}
+import { getApiKey } from '../lib/secrets'
 
 async function generateStudyGuide(transcript, subject) {
-  const apiKey = await getApiKey()
+  const apiKey = getApiKey('anthropic')
 
   if (!apiKey) {
     return heuristicGuide(transcript, subject)

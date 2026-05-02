@@ -28,10 +28,8 @@ const DEFAULT_PROFILE = {
   voiceEnabled: false,
   voiceAutoSpeak: false,
   systemVoice: null,           // chosen system voice name (null = auto-pick best)
-  elevenLabsApiKey: '',        // ElevenLabs API key for premium TTS
+  // API keys live in maya_secrets (see lib/secrets.js) — NOT in profile.
   elevenLabsVoiceId: '',       // chosen ElevenLabs voice id
-  anthropicApiKey: '',         // Claude API key — unlocks real Maya intelligence
-  openaiApiKey: '',            // OpenAI API key — unlocks Whisper for reliable lesson transcription
   notificationsEnabled: false, // Web Notifications opt-in
   wakeWordEnabled: false,      // "hey maya" always-listen
   avatarStyle: 'pixar',
@@ -59,8 +57,20 @@ function loadProfile() {
     const parsed = JSON.parse(raw)
     // Strip legacy plaintext parentPin — older versions stored it un-hashed.
     // Once parentPinHash exists, the plaintext is never needed again.
+    let mutated = false
     if (parsed && typeof parsed === 'object' && parsed.parentPin) {
       delete parsed.parentPin
+      mutated = true
+    }
+    // Strip legacy API key fields if they leaked into profile.
+    // Real keys live in maya_secrets (see lib/secrets.js).
+    for (const k of ['anthropicApiKey', 'openaiApiKey', 'elevenLabsApiKey']) {
+      if (parsed && Object.prototype.hasOwnProperty.call(parsed, k)) {
+        delete parsed[k]
+        mutated = true
+      }
+    }
+    if (mutated) {
       try { localStorage.setItem(PROFILE_KEY, JSON.stringify(parsed)) } catch {}
     }
     return { ...DEFAULT_PROFILE, ...parsed, version: PROFILE_VERSION }
@@ -74,14 +84,11 @@ function loadProfile() {
  * or sharing a screenshot of localStorage. Doesn't touch other profile fields.
  */
 function clearApiKeys() {
+  // Legacy compat — real keys are now wiped via lib/secrets clearAllApiKeys().
+  // Re-saving the profile is enough to flush any stale fields the migration missed.
   try {
     const p = loadProfile()
-    saveProfile({
-      ...p,
-      anthropicApiKey: '',
-      openaiApiKey: '',
-      elevenLabsApiKey: '',
-    })
+    saveProfile(p)
   } catch {}
 }
 

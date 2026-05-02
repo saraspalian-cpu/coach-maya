@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadProfile, saveProfile, clearApiKeys } from './lib/profile'
 import { listAllVoices, waitForVoices, speak, cancelSpeech } from './lib/voice'
+import { getApiKey, setApiKey, clearAllApiKeys } from './lib/secrets'
 import VoiceStatus from './components/VoiceStatus'
 
 const C = {
@@ -61,19 +62,29 @@ export default function MayaProfile() {
   const [profile, setProfile] = useState(loadProfile())
   const [saved, setSaved] = useState(false)
   const [systemVoices, setSystemVoices] = useState([])
+  const [keys, setKeys] = useState({
+    anthropic: getApiKey('anthropic'),
+    openai: getApiKey('openai'),
+    elevenlabs: getApiKey('elevenlabs'),
+  })
+  const updateKey = (provider, value) => {
+    setKeys(k => ({ ...k, [provider]: value }))
+    setApiKey(provider, value)
+  }
 
   useEffect(() => {
     waitForVoices().then(() => setSystemVoices(listAllVoices()))
   }, [])
 
   const previewVoice = (voiceName) => {
-    // Save first so the picker uses it
-    const test = { ...profile, systemVoice: voiceName, elevenLabsApiKey: '' }
-    saveProfile(test)
+    // Save profile + temporarily clear ElevenLabs key so system voice is used
+    saveProfile({ ...profile, systemVoice: voiceName })
+    const savedKey = getApiKey('elevenlabs')
+    setApiKey('elevenlabs', '')
     cancelSpeech()
     const n = loadProfile().name || "Champ"; speak(`Hey ${n}, this is Maya. Locked in and ready when you are.`)
-    // Restore
-    setTimeout(() => saveProfile(profile), 100)
+    // Restore the key after preview
+    setTimeout(() => { if (savedKey) setApiKey('elevenlabs', savedKey) }, 100)
   }
 
   const previewElevenLabs = () => {
@@ -193,8 +204,8 @@ export default function MayaProfile() {
             <input
               style={input}
               type="password"
-              value={profile.anthropicApiKey || ''}
-              onChange={e => update({ anthropicApiKey: e.target.value })}
+              value={keys.anthropic || ''}
+              onChange={e => updateKey('anthropic', e.target.value)}
               placeholder="sk-ant-..."
             />
           </Row>
@@ -202,7 +213,9 @@ export default function MayaProfile() {
             onClick={() => {
               if (confirm('Wipe all API keys from this device? You will need to re-enter them to use Claude / Whisper / ElevenLabs.')) {
                 clearApiKeys()
+                clearAllApiKeys()
                 setProfile(loadProfile())
+                setKeys({ anthropic: '', openai: '', elevenlabs: '' })
               }
             }}
             style={{
@@ -222,8 +235,8 @@ export default function MayaProfile() {
             <input
               style={input}
               type="password"
-              value={profile.openaiApiKey || ''}
-              onChange={e => update({ openaiApiKey: e.target.value })}
+              value={keys.openai || ''}
+              onChange={e => updateKey('openai', e.target.value)}
               placeholder="sk-..."
             />
           </Row>
@@ -256,8 +269,8 @@ export default function MayaProfile() {
             <input
               style={input}
               type="password"
-              value={profile.elevenLabsApiKey || ''}
-              onChange={e => update({ elevenLabsApiKey: e.target.value })}
+              value={keys.elevenlabs || ''}
+              onChange={e => updateKey('elevenlabs', e.target.value)}
               placeholder="sk_..."
             />
           </Row>
@@ -297,7 +310,7 @@ export default function MayaProfile() {
             />
           </Row>
 
-          {profile.elevenLabsApiKey && profile.elevenLabsVoiceId && (
+          {keys.elevenlabs && profile.elevenLabsVoiceId && (
             <button
               onClick={previewElevenLabs}
               style={{

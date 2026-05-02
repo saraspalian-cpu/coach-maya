@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMaya } from './context/MayaContext'
 import { loadProfile } from './lib/profile'
+import { getApiKey } from './lib/secrets'
 
 const C = {
   bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
@@ -46,8 +47,7 @@ export default function MayaHomework() {
     setInput('')
     setLoading(true)
 
-    const profile = loadProfile()
-    const apiKey = profile.anthropicApiKey
+    const apiKey = getApiKey('anthropic')
 
     let reply
     if (apiKey) {

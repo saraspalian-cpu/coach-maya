@@ -5,6 +5,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loadProfile } from './lib/profile'
+import { getApiKey } from './lib/secrets'
 
 const C = {
   bg: '#0a0a14', surface: 'rgba(255,255,255,0.04)', surfaceLight: 'rgba(255,255,255,0.07)',
@@ -53,14 +54,14 @@ export default function MayaVocab() {
   const lookUp = async () => {
     if (!form.word.trim()) return
     setDefLoading(true)
-    const profile = loadProfile()
-    if (profile.anthropicApiKey) {
+    const apiKey = getApiKey('anthropic')
+    if (apiKey) {
       try {
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': profile.anthropicApiKey,
+            'x-api-key': apiKey,
             'anthropic-version': '2023-06-01',
             'anthropic-dangerous-direct-browser-access': 'true',
           },

@@ -13,6 +13,7 @@ import { listen, isSTTSupported } from './lib/voice'
 import { transcribeWithWhisper } from './lib/whisper'
 import { TabAudioRecorder } from './lib/tabAudio'
 import { loadProfile } from './lib/profile'
+import { getApiKey } from './lib/secrets'
 import { useMaya } from './context/MayaContext'
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
 const AvatarFallback = ({ size = 200 }) => <div style={{ width: size, height: size }} />
@@ -267,9 +268,10 @@ export default function MayaLesson() {
     // Tab mode: REQUIRED (no live transcript).
     // Mic mode: optional override of Web Speech.
     const profile = loadProfile()
+    const openaiKey = getApiKey('openai')
     let whisperTranscript = null
     if (audioBlob && audioBlob.size > 1000) {
-      if (!profile?.openaiApiKey) {
+      if (!openaiKey) {
         if (captureMode === 'tab') {
           setPhase('pick')
           maya.setLiveLesson?.(null)
@@ -281,7 +283,7 @@ export default function MayaLesson() {
         try {
           setPhase('transcribing')
           maya.speakText('Transcribing the lesson with Whisper. One sec.')
-          whisperTranscript = await transcribeWithWhisper(audioBlob, profile.openaiApiKey, {
+          whisperTranscript = await transcribeWithWhisper(audioBlob, openaiKey, {
             prompt: `This is a ${subject} lesson for a 12-year-old student.`,
             language: 'en',
           })
@@ -309,10 +311,10 @@ export default function MayaLesson() {
       setPhase('pick')
       maya.setLiveLesson?.(null)
       const msg = !result?.fullTranscript
-        ? (profile?.openaiApiKey
+        ? (openaiKey
           ? "I caught zero audio even with Whisper. The mic isn't picking up sound at all."
           : "I caught zero audio. Add an OpenAI API key in Profile for reliable Whisper transcription, or check your mic.")
-        : `Only caught ${result.wordCount} words. ${profile?.openaiApiKey ? 'Try moving closer to the speaker.' : 'Add an OpenAI key in Profile for Whisper — way more reliable.'}`
+        : `Only caught ${result.wordCount} words. ${openaiKey ? 'Try moving closer to the speaker.' : 'Add an OpenAI key in Profile for Whisper — way more reliable.'}`
       setMicError(msg)
       maya.speakText(msg)
       return
@@ -708,7 +710,7 @@ export default function MayaLesson() {
             )}
 
             {/* Whisper key warning for tab mode */}
-            {captureMode === 'tab' && !loadProfile().openaiApiKey && (
+            {captureMode === 'tab' && !getApiKey('openai') && (
               <div style={{
                 padding: 12, background: C.amber + '11',
                 border: `1px solid ${C.amber}55`, borderRadius: 10,

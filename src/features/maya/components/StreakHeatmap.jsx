@@ -58,7 +58,7 @@ function buildCells() {
   // Also count tasks from maya_state if present
   try {
     const state = JSON.parse(localStorage.getItem('maya_state') || '{}')
-    const log = state.dayLog || []
+    const log = Array.isArray(state?.dayLog) ? state.dayLog : []
     log.forEach(e => {
       if (e.type === 'task_complete') {
         const day = (e.time || '').slice(0, 10)

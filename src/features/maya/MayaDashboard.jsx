@@ -14,6 +14,7 @@ import { getSmartNav, trackVisit } from './agents/smartNav'
 import { getMorningBrief, dismissMorningBrief } from './agents/morningBrief'
 import { EXCUSE_OPTIONS, logSkipReason, recordTaskOutcome } from './agents/intelligence'
 import StreakHeatmap from './components/StreakHeatmap'
+import { getApiKey } from './lib/secrets'
 
 // Lazy load 3D avatar (Three.js is ~800KB)
 const MayaAvatar = lazy(() => import('./components/Maya3D'))
@@ -651,7 +652,7 @@ function StatsTab({ maya }) {
 // ─── Chat Tab ───
 function ChatTab({ maya, chatInput, setChatInput, messagesEndRef }) {
   const navigate = useNavigate()
-  const hasApiKey = !!maya.profile?.anthropicApiKey
+  const hasApiKey = !!getApiKey('anthropic')
   const handleSend = () => {
     if (!chatInput.trim()) return
     maya.sendMessage(chatInput.trim())
@@ -1198,10 +1199,13 @@ function MorningBriefCard({ tasks, navigate }) {
 
 function NextCompWidget({ navigate }) {
   const comps = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('maya_competitions')) || [] } catch { return [] }
+    try {
+      const v = JSON.parse(localStorage.getItem('maya_competitions'))
+      return Array.isArray(v) ? v : []
+    } catch { return [] }
   }, [])
   const today = new Date().toISOString().slice(0, 10)
-  const upcoming = comps.filter(c => c.date >= today).sort((a, b) => a.date.localeCompare(b.date))
+  const upcoming = comps.filter(c => c && typeof c.date === 'string' && c.date >= today).sort((a, b) => a.date.localeCompare(b.date))
   const next = upcoming[0]
   if (!next) return null
 

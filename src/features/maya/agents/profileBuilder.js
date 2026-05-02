@@ -88,13 +88,8 @@ function sanitizeExtracted(raw) {
 
 // ─── Claude-powered extraction ───
 async function extractWithClaude(transcript) {
-  let apiKey = ''
-  try {
-    const profile = JSON.parse(localStorage.getItem('maya_profile') || '{}')
-    apiKey = profile.anthropicApiKey || import.meta.env.VITE_ANTHROPIC_API_KEY || ''
-  } catch {
-    apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY || ''
-  }
+  const { getApiKey } = await import('../lib/secrets')
+  const apiKey = getApiKey('anthropic')
   if (!apiKey) return null
 
   try {
